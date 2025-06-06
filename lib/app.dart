@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import './logic/permohonan_cubit/permohonan_cubit.dart';
 import './routes/app_router.dart';
-import './presentation/screens/permohonan_list_screen.dart';
+import './presentation/screens/auth/auth_gate.dart'; // Ganti initial screen
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
               Colors.teal, // Anda bisa mengganti tema sesuai keinginan
         ),
         onGenerateRoute: AppRouter.generateRoute,
-        initialRoute: PermohonanListScreen.routeName,
+        initialRoute: AuthGate.routeName, // Atur AuthGate sebagai initial route
       ),
     );
   }

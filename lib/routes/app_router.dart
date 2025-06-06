@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../presentation/screens/permohonan_list_screen.dart';
 import '../presentation/screens/permohonan_detail_screen.dart';
+import '../presentation/screens/auth/auth_gate.dart';
+import '../presentation/screens/auth/login_screen.dart';
+import '../presentation/screens/auth/register_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -14,7 +17,14 @@ class AppRouter {
             builder: (_) => PermohonanDetailScreen(permohonanId: permohonanId),
           );
         }
-        return _errorRoute("ID Permohonan tidak ditemukan");
+        // Return error route if permohonanId is null
+        return _errorRoute("Permohonan ID tidak ditemukan.");
+      case AuthGate.routeName:
+        return MaterialPageRoute(builder: (_) => const AuthGate());
+      case LoginScreen.routeName:
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case RegisterScreen.routeName:
+        return MaterialPageRoute(builder: (_) => const RegisterScreen());
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }

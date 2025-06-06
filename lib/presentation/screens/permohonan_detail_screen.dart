@@ -4,6 +4,12 @@ import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../../data/models/permohonan_model.dart';
 import '../../data/models/tahapan_model.dart';
 import '../widgets/tahapan_list_item.dart';
+import '../widgets/forms/form_permohonan_widget.dart'; // Import form
+import '../widgets/forms/form_survey_widget.dart'; // Import form
+import '../widgets/forms/form_mom_widget.dart'; // Import form
+import '../widgets/forms/form_rab_widget.dart'; // Import form
+import '../widgets/forms/form_kontrak_rinci_widget.dart'; // Import form
+import '../widgets/forms/form_pasang_app_widget.dart'; // Import form
 import 'package:intl/intl.dart';
 
 class PermohonanDetailScreen extends StatefulWidget {
@@ -21,6 +27,73 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
   void initState() {
     super.initState();
     context.read<PermohonanCubit>().loadPermohonanDetail(widget.permohonanId);
+  }
+
+  Widget _buildCurrentStageForm(
+    PermohonanModel permohonan,
+    TahapanModel tahapanAktif,
+  ) {
+    // Fungsi untuk menangani submit form
+    void handleFormSubmit(Map<String, dynamic> formData) {
+      context.read<PermohonanCubit>().saveStageFormDataAndComplete(
+        permohonan.id,
+        tahapanAktif.nama,
+        formData,
+      );
+    }
+
+    switch (tahapanAktif.nama) {
+      case "Permohonan":
+        return FormPermohonanWidget(
+          permohonan: permohonan,
+          onSubmit: handleFormSubmit,
+        );
+      case "Survey Lokasi":
+        return FormSurveyWidget(
+          onSubmit: handleFormSubmit,
+          initialData: tahapanAktif.formData,
+        );
+      // case "MOM":
+      case "MOM":
+        return FormMomWidget(
+          onSubmit: handleFormSubmit,
+          initialData: tahapanAktif.formData,
+        );
+      case "RAB":
+        // Anda mungkin perlu mengambil data survey dari tahap sebelumnya jika diperlukan di form RAB
+        // final surveyTahap = permohonan.daftarTahapan.firstWhere((t) => t.nama == "Survey Lokasi", orElse: () => const TahapanModel(nama: ''));
+        // final surveyData = surveyTahap.formData;
+        return FormRabWidget(
+          onSubmit: handleFormSubmit,
+          initialData: tahapanAktif.formData,
+        );
+      case "Kontrak Rinci":
+        // Anda mungkin perlu mengambil data RAB dari tahap sebelumnya
+        // final rabTahap = permohonan.daftarTahapan.firstWhere((t) => t.nama == "RAB", orElse: () => const TahapanModel(nama: ''));
+        // final rabData = rabTahap.formData;
+        return FormKontrakRinciWidget(
+          onSubmit: handleFormSubmit,
+          initialData: tahapanAktif.formData,
+        );
+      case "Pasang APP":
+        return FormPasangAppWidget(
+          onSubmit: handleFormSubmit,
+          initialData: tahapanAktif.formData,
+        );
+      //   return FormMomWidget(onSubmit: handleFormSubmit, initialData: tahapanAktif.formData);
+      // ... tambahkan case untuk form lainnya
+      default:
+        // Jika tidak ada form khusus, tampilkan tombol default untuk menyelesaikan tahap
+        return Center(
+          child: ElevatedButton(
+            onPressed: () => context.read<PermohonanCubit>().advanceToNextStage(
+              permohonan.id,
+              tahapanAktif.nama,
+            ),
+            child: Text('Selesaikan Tahap: ${tahapanAktif.nama}'),
+          ),
+        );
+    }
   }
 
   @override
@@ -95,16 +168,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                   const SizedBox(height: 20),
                   if (tahapanAktif.isAktif &&
                       permohonan.statusKeseluruhan == StatusPermohonan.proses)
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.read<PermohonanCubit>().completeCurrentStage(
-                            permohonan.id,
-                          );
-                        },
-                        child: Text('Selesaikan Tahap: ${tahapanAktif.nama}'),
-                      ),
-                    ),
+                    _buildCurrentStageForm(permohonan, tahapanAktif),
                 ],
               ),
             );

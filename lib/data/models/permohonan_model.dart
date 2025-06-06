@@ -4,12 +4,16 @@ import '../../core/constants/app_stages.dart'; // Sesuaikan path jika berbeda
 
 enum StatusPermohonan { proses, selesai, dibatalkan }
 
+enum Prioritas { rendah, sedang, tinggi }
+
 class PermohonanModel extends Equatable {
   final String id;
   final String namaPelanggan;
   final DateTime tanggalPengajuan;
   final List<TahapanModel> daftarTahapan;
   final StatusPermohonan statusKeseluruhan;
+  final Prioritas? prioritas; // Tambahkan prioritas
+  final String? catatanPermohonan; // Tambahkan catatan awal
 
   const PermohonanModel({
     required this.id,
@@ -17,7 +21,30 @@ class PermohonanModel extends Equatable {
     required this.tanggalPengajuan,
     required this.daftarTahapan,
     this.statusKeseluruhan = StatusPermohonan.proses,
+    this.prioritas,
+    this.catatanPermohonan,
   });
+
+  factory PermohonanModel.fromMap(
+    Map<String, dynamic> map,
+    List<TahapanModel> tahapan,
+  ) {
+    return PermohonanModel(
+      id: map['id'] as String,
+      namaPelanggan: map['nama_pelanggan'] as String,
+      tanggalPengajuan: DateTime.parse(map['tanggal_pengajuan']),
+      daftarTahapan: tahapan,
+      statusKeseluruhan: StatusPermohonan.values.firstWhere(
+        (e) => e.toString().split('.').last == map['status_keseluruhan'],
+      ),
+      prioritas: map['prioritas'] != null
+          ? Prioritas.values.firstWhere(
+              (e) => e.toString().split('.').last == map['prioritas'],
+            )
+          : null,
+      catatanPermohonan: map['catatan_permohonan'] as String?,
+    );
+  }
 
   factory PermohonanModel.baru({
     required String id,
@@ -34,6 +61,8 @@ class PermohonanModel extends Equatable {
       namaPelanggan: namaPelanggan,
       tanggalPengajuan: DateTime.now(),
       daftarTahapan: tahapanAwal,
+      // prioritas dan catatanPermohonan bisa diisi dari form awal
+      // atau dibiarkan null dan diisi pada tahap pertama
     );
   }
 
@@ -43,6 +72,8 @@ class PermohonanModel extends Equatable {
     DateTime? tanggalPengajuan,
     List<TahapanModel>? daftarTahapan,
     StatusPermohonan? statusKeseluruhan,
+    Prioritas? prioritas,
+    String? catatanPermohonan,
   }) {
     return PermohonanModel(
       id: id ?? this.id,
@@ -50,6 +81,8 @@ class PermohonanModel extends Equatable {
       tanggalPengajuan: tanggalPengajuan ?? this.tanggalPengajuan,
       daftarTahapan: daftarTahapan ?? this.daftarTahapan,
       statusKeseluruhan: statusKeseluruhan ?? this.statusKeseluruhan,
+      prioritas: prioritas ?? this.prioritas,
+      catatanPermohonan: catatanPermohonan ?? this.catatanPermohonan,
     );
   }
 
@@ -60,6 +93,8 @@ class PermohonanModel extends Equatable {
     tanggalPengajuan,
     daftarTahapan,
     statusKeseluruhan,
+    prioritas,
+    catatanPermohonan,
   ];
 
   String get tahapanAktif {
