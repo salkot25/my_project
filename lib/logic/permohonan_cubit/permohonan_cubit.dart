@@ -129,6 +129,8 @@ class PermohonanCubit extends Cubit<PermohonanState> {
               .toString()
               .split('.')
               .last,
+          'nama_tahapan_aktif_cache':
+              permohonanBaru.namaTahapanAktifCache, // Simpan cache awal
           // prioritas, jenis_permohonan, daya, dan catatan_permohonan akan diisi di tahap pertama
         })
         .then((_) {
@@ -364,8 +366,7 @@ class PermohonanCubit extends Cubit<PermohonanState> {
         .from('permohonan')
         .update({
           'status_keseluruhan': statusKeseluruhan.toString().split('.').last,
-          // Anda bisa menyimpan nama tahap aktif di sini juga jika perlu
-          // 'tahapan_aktif_nama': statusNamaTahap, // Ini bisa membantu query list
+          'nama_tahapan_aktif_cache': statusNamaTahap, // Update cache
         })
         .eq('id', idPermohonan)
         .then((_) {
@@ -441,6 +442,8 @@ class PermohonanCubit extends Cubit<PermohonanState> {
               .toString()
               .split('.')
               .last,
+          'nama_tahapan_aktif_cache':
+              "Dibatalkan", // Update cache saat dibatalkan
           // Anda mungkin ingin menghentikan semua tahapan aktif juga
         })
         .eq('id', idPermohonan)

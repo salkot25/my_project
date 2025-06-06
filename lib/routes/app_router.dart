@@ -7,6 +7,8 @@ import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/register_screen.dart';
 import '../presentation/screens/profile_screen.dart';
 import '../presentation/screens/auth/change_password_screen.dart';
+import '../presentation/screens/dashboard_screen.dart';
+import '../presentation/screens/settings_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -34,6 +36,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case ChangePasswordScreen.routeName:
         return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
+      case '/dashboard':
+        return MaterialPageRoute(builder: (_) => const DashboardScreen());
+      case '/settings':
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }

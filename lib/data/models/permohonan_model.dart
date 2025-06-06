@@ -18,6 +18,7 @@ class PermohonanModel extends Equatable {
   final String? catatanPermohonan; // Tambahkan catatan awal
   final JenisPermohonan? jenisPermohonan;
   final String? daya; // Misal: "1300 VA", "2200 VA"
+  final String? namaTahapanAktifCache; // Kolom cache baru
 
   const PermohonanModel({
     required this.id,
@@ -29,6 +30,7 @@ class PermohonanModel extends Equatable {
     this.catatanPermohonan,
     this.jenisPermohonan,
     this.daya,
+    this.namaTahapanAktifCache,
   });
 
   factory PermohonanModel.fromMap(
@@ -55,6 +57,7 @@ class PermohonanModel extends Equatable {
             )
           : null,
       daya: map['daya'] as String?,
+      namaTahapanAktifCache: map['nama_tahapan_aktif_cache'] as String?,
     );
   }
 
@@ -68,6 +71,9 @@ class PermohonanModel extends Equatable {
     if (tahapanAwal.isNotEmpty) {
       tahapanAwal[0] = tahapanAwal[0].copyWith(status: StatusTahapan.aktif);
     }
+    final String? initialNamaTahapanAktifCache = tahapanAwal.isNotEmpty
+        ? tahapanAwal[0].nama
+        : null;
     return PermohonanModel(
       id: id,
       namaPelanggan: namaPelanggan,
@@ -77,6 +83,7 @@ class PermohonanModel extends Equatable {
       // atau dibiarkan null dan diisi pada tahap pertama
       // jenisPermohonan dan daya juga bisa diisi dari form awal
       // atau dibiarkan null dan diisi pada tahap pertama
+      namaTahapanAktifCache: initialNamaTahapanAktifCache,
     );
   }
 
@@ -90,6 +97,7 @@ class PermohonanModel extends Equatable {
     String? catatanPermohonan,
     JenisPermohonan? jenisPermohonan,
     String? daya,
+    String? namaTahapanAktifCache,
   }) {
     return PermohonanModel(
       id: id ?? this.id,
@@ -101,6 +109,8 @@ class PermohonanModel extends Equatable {
       catatanPermohonan: catatanPermohonan ?? this.catatanPermohonan,
       jenisPermohonan: jenisPermohonan ?? this.jenisPermohonan,
       daya: daya ?? this.daya,
+      namaTahapanAktifCache:
+          namaTahapanAktifCache ?? this.namaTahapanAktifCache,
     );
   }
 
@@ -115,6 +125,7 @@ class PermohonanModel extends Equatable {
     catatanPermohonan,
     jenisPermohonan,
     daya,
+    namaTahapanAktifCache,
   ];
 
   String get tahapanAktif {
@@ -124,9 +135,13 @@ class PermohonanModel extends Equatable {
     if (statusKeseluruhan == StatusPermohonan.dibatalkan) {
       return "Dibatalkan";
     }
-    // Jika status proses
-    final aktif = daftarTahapan.where((t) => t.isAktif).toList();
-    if (aktif.isNotEmpty) return aktif.first.nama;
+    // Jika status proses, coba gunakan cache dulu jika ada
+    if (namaTahapanAktifCache != null && namaTahapanAktifCache!.isNotEmpty) {
+      return namaTahapanAktifCache!;
+    }
+    // Jika cache kosong, cari dari daftarTahapan (berguna untuk detail screen)
+    final aktifDariDaftar = daftarTahapan.where((t) => t.isAktif).toList();
+    if (aktifDariDaftar.isNotEmpty) return aktifDariDaftar.first.nama;
 
     return "Proses"; // Fallback jika status 'proses' tapi tidak ada tahap aktif
   }

@@ -408,7 +408,20 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                       ),
                     const SizedBox(height: 8),
                     Text(
-                      'Status Keseluruhan: ${permohonan.statusKeseluruhan.name.toUpperCase()}',
+                      // Tampilkan nama tahap aktif jika status proses, selain itu tampilkan status keseluruhan
+                      'Status Keseluruhan: ' +
+                          (permohonan.statusKeseluruhan ==
+                                  StatusPermohonan.proses
+                              ? (() {
+                                  final aktif = permohonan.daftarTahapan
+                                      .where((t) => t.isAktif)
+                                      .toList();
+                                  return aktif.isNotEmpty
+                                      ? aktif.first.nama
+                                      : 'Proses';
+                                })()
+                              : permohonan.statusKeseluruhan.name
+                                    .toUpperCase()),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

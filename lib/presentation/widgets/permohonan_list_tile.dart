@@ -26,10 +26,15 @@ class PermohonanListTile extends StatelessWidget {
               'Tanggal: ${DateFormat('dd MMM yyyy').format(permohonan.tanggalPengajuan)}',
             ),
             Text(
-              'Status: ${permohonan.tahapanAktif}',
+              'Status: ${permohonan.tahapanAktif}', // Menggunakan getter yang sudah diupdate
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
+                color: permohonan.statusKeseluruhan == StatusPermohonan.selesai
+                    ? Colors.green
+                    : permohonan.statusKeseluruhan ==
+                          StatusPermohonan.dibatalkan
+                    ? Colors.red
+                    : Theme.of(context).primaryColor,
               ),
             ),
           ],
