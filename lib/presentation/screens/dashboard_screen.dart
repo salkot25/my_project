@@ -176,8 +176,9 @@ class DashboardScreen extends StatelessWidget {
                                       )
                                       .toList(),
                                   onChanged: (v) {
-                                    if (v != null)
+                                    if (v != null) {
                                       setState(() => selectedVendor = v);
+                                    }
                                   },
                                   underline: Container(),
                                 ),

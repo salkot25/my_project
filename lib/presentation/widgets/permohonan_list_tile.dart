@@ -6,10 +6,10 @@ class PermohonanListTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const PermohonanListTile({
-    Key? key,
+    super.key,
     required this.permohonan,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   Color _getStatusColor() {
     switch (permohonan.statusKeseluruhan) {
