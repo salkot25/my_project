@@ -5,11 +5,13 @@ enum Vendor { KAG, Armarin }
 class FormKontrakRinciWidget extends StatefulWidget {
   final Function(Map<String, dynamic> formData) onSubmit;
   final Map<String, dynamic>? initialData; // Untuk pre-fill jika ada
+  final Map<String, dynamic>? rabData; // Data dari tahap RAB
 
   const FormKontrakRinciWidget({
     super.key,
     required this.onSubmit,
     this.initialData,
+    this.rabData,
   });
 
   @override
@@ -60,10 +62,39 @@ class _FormKontrakRinciWidgetState extends State<FormKontrakRinciWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // Anda bisa menampilkan data RAB dari tahap sebelumnya di sini
-          // Contoh: Text('Kebutuhan Trafo (dari RAB): ${widget.initialData?['ukuran_trafo_rab'] ?? '-'}'),
-          // Text('Jumlah Tiang (dari RAB): ${widget.initialData?['jumlah_tiang_rab'] ?? '-'}'),
-          // const SizedBox(height: 16),
+          if (widget.rabData != null && widget.rabData!.isNotEmpty) ...[
+            Text(
+              'Informasi dari RAB:',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            if (widget.rabData!['ukuran_trafo'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  'Ukuran Trafo: ${widget.rabData!['ukuran_trafo']} kVA',
+                ),
+              ),
+            if (widget.rabData!['jumlah_tiang'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text('Jumlah Tiang: ${widget.rabData!['jumlah_tiang']}'),
+              ),
+            if (widget.rabData!['catatan_rab'] != null &&
+                widget.rabData!['catatan_rab'].isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text('Catatan RAB: ${widget.rabData!['catatan_rab']}'),
+              ),
+            const Divider(height: 20, thickness: 1),
+          ],
+          Text(
+            'Input Data Kontrak Rinci',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
           const Text(
             'Pilih Vendor:',
             style: TextStyle(fontWeight: FontWeight.bold),

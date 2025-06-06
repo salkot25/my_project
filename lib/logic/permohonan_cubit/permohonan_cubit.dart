@@ -8,9 +8,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 part 'permohonan_state.dart';
 
 class PermohonanCubit extends Cubit<PermohonanState> {
-  PermohonanCubit() : super(PermohonanInitial());
+  PermohonanCubit() : super(PermohonanInitial()) {
+    // Log saat cubit diinisialisasi
+    // print('PermohonanCubit: Initialized with state $state');
+  }
 
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  @override
+  void onChange(Change<PermohonanState> change) {
+    super.onChange(change);
+    print(
+      'PermohonanCubit STATE CHANGE: ${change.currentState} -> ${change.nextState}',
+    );
+  }
 
   void loadPermohonanList() {
     emit(PermohonanLoading());
@@ -19,13 +30,22 @@ class PermohonanCubit extends Cubit<PermohonanState> {
         .select()
         .order('tanggal_pengajuan', ascending: false)
         .then((data) {
+          print(
+            'PermohonanCubit: loadPermohonanList - Supabase call successful. Data count: ${data.length}',
+          );
           // Untuk daftar, kita hanya perlu data permohonan, tahapan akan dimuat di detail
           final permohonanList = data
               .map((map) => PermohonanModel.fromMap(map, []))
               .toList();
           emit(PermohonanListLoaded(permohonanList));
         })
-        .catchError((e) {
+        .catchError((e, stackTrace) {
+          print(
+            'PermohonanCubit: loadPermohonanList - Supabase call failed. Error: $e',
+          );
+          print(
+            'PermohonanCubit: loadPermohonanList - StackTrace: $stackTrace',
+          );
           emit(
             PermohonanError("Gagal memuat daftar permohonan: ${e.toString()}"),
           );
@@ -33,6 +53,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
   }
 
   void loadPermohonanDetail(String idPermohonan) {
+    print(
+      'PermohonanCubit: loadPermohonanDetail called for ID $idPermohonan. Current state: $state',
+    );
     emit(PermohonanLoading());
     try {
       // Ambil data permohonan
@@ -42,6 +65,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           .eq('id', idPermohonan)
           .single()
           .then((permohonanData) {
+            print(
+              'PermohonanCubit: loadPermohonanDetail - Permohonan data fetched.',
+            );
             // Ambil data tahapan terkait
             _supabase
                 .from('tahapan')
@@ -49,6 +75,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
                 .eq('permohonan_id', idPermohonan)
                 .order('urutan', ascending: true)
                 .then((tahapanData) {
+                  print(
+                    'PermohonanCubit: loadPermohonanDetail - Tahapan data fetched.',
+                  );
                   final permohonan = PermohonanModel.fromMap(
                     permohonanData,
                     tahapanData.map((t) => TahapanModel.fromMap(t)).toList(),
@@ -56,20 +85,30 @@ class PermohonanCubit extends Cubit<PermohonanState> {
                   emit(PermohonanDetailLoaded(permohonan));
                 })
                 .catchError((e) {
+                  print(
+                    'PermohonanCubit: loadPermohonanDetail - Error fetching tahapan: $e',
+                  );
                   emit(
                     PermohonanError("Gagal memuat tahapan: ${e.toString()}"),
                   );
                 });
           })
           .catchError((e) {
+            print(
+              'PermohonanCubit: loadPermohonanDetail - Error fetching permohonan: $e',
+            );
             emit(PermohonanError("Gagal memuat permohonan: ${e.toString()}"));
           });
     } catch (e) {
+      print('PermohonanCubit: loadPermohonanDetail - General error: $e');
       emit(const PermohonanError("Permohonan tidak ditemukan"));
     }
   }
 
   void tambahPermohonanBaru(String namaPelanggan) {
+    print(
+      'PermohonanCubit: tambahPermohonanBaru called for $namaPelanggan. Current state: $state',
+    );
     // Membuat ID unik sederhana untuk contoh (Supabase juga bisa generate UUID)
     final newId =
         "PERM_${DateTime.now().millisecondsSinceEpoch}"; // Contoh ID unik
@@ -90,7 +129,7 @@ class PermohonanCubit extends Cubit<PermohonanState> {
               .toString()
               .split('.')
               .last,
-          // prioritas dan catatan_permohonan akan diisi di tahap pertama
+          // prioritas, jenis_permohonan, daya, dan catatan_permohonan akan diisi di tahap pertama
         })
         .then((_) {
           // Simpan tahapan-tahapan awal
@@ -146,8 +185,16 @@ class PermohonanCubit extends Cubit<PermohonanState> {
         .then((_) {
           // Jika tahap "Permohonan" yang diisi, update juga data di PermohonanModel
           if (namaTahapAktif == "Permohonan") {
+            JenisPermohonan? jenisPermohonan;
             Prioritas? prioritas;
             try {
+              jenisPermohonan = formData['jenis_permohonan'] != null
+                  ? JenisPermohonan.values.firstWhere(
+                      (e) =>
+                          e.toString().split('.').last ==
+                          formData['jenis_permohonan'],
+                    )
+                  : null;
               prioritas = formData['prioritas'] != null
                   ? Prioritas.values.firstWhere(
                       (e) =>
@@ -156,10 +203,17 @@ class PermohonanCubit extends Cubit<PermohonanState> {
                   : null;
             } catch (e) {
               // handle error jika parsing enum gagal
+              // Anda bisa menambahkan logging atau emit error state di sini
             }
             _supabase
                 .from('permohonan')
                 .update({
+                  'jenis_permohonan': jenisPermohonan
+                      ?.toString()
+                      .split('.')
+                      .last,
+                  'daya':
+                      formData['daya'] as String?, // Ambil daya dari formData
                   'prioritas': prioritas?.toString().split('.').last,
                   'catatan_permohonan': formData['catatan'] as String?,
                 })
@@ -323,6 +377,79 @@ class PermohonanCubit extends Cubit<PermohonanState> {
             PermohonanError(
               "Gagal mengupdate status permohonan: ${e.toString()}",
             ),
+          );
+        });
+  }
+
+  void updatePermohonanDetailData(
+    String idPermohonan, {
+    required String namaPelanggan,
+    Prioritas? prioritas,
+    JenisPermohonan? jenisPermohonan,
+    String? daya,
+    String? catatanPermohonan,
+  }) {
+    emit(PermohonanLoading()); // Atau state spesifik untuk update
+    _supabase
+        .from('permohonan')
+        .update({
+          'nama_pelanggan': namaPelanggan,
+          'prioritas': prioritas?.toString().split('.').last,
+          'jenis_permohonan': jenisPermohonan?.toString().split('.').last,
+          'daya': daya,
+          'catatan_permohonan': catatanPermohonan,
+        })
+        .eq('id', idPermohonan)
+        .then((_) {
+          loadPermohonanDetail(idPermohonan); // Muat ulang detail
+          // Pertimbangkan untuk memuat ulang list juga jika nama pelanggan berubah dan ditampilkan di list
+          // loadPermohonanList();
+        })
+        .catchError((e) {
+          emit(
+            PermohonanError(
+              "Gagal mengupdate detail permohonan: ${e.toString()}",
+            ),
+          );
+        });
+  }
+
+  void hapusPermohonan(String idPermohonan) {
+    emit(PermohonanLoading()); // Atau state spesifik untuk delete
+    _supabase
+        .from('permohonan')
+        .delete()
+        .eq('id', idPermohonan)
+        .then((_) {
+          // Setelah berhasil hapus, kembali ke daftar atau muat ulang daftar
+          // Untuk kesederhanaan, kita akan emit state yang menandakan penghapusan berhasil
+          // dan biarkan UI menangani navigasi/refresh.
+          emit(PermohonanOperationSuccess("Permohonan berhasil dihapus."));
+          loadPermohonanList(); // Muat ulang daftar
+        })
+        .catchError((e) {
+          emit(PermohonanError("Gagal menghapus permohonan: ${e.toString()}"));
+        });
+  }
+
+  void batalkanPermohonan(String idPermohonan) {
+    emit(PermohonanLoading()); // Atau state spesifik
+    _supabase
+        .from('permohonan')
+        .update({
+          'status_keseluruhan': StatusPermohonan.dibatalkan
+              .toString()
+              .split('.')
+              .last,
+          // Anda mungkin ingin menghentikan semua tahapan aktif juga
+        })
+        .eq('id', idPermohonan)
+        .then((_) {
+          loadPermohonanDetail(idPermohonan); // Muat ulang detail
+        })
+        .catchError((e) {
+          emit(
+            PermohonanError("Gagal membatalkan permohonan: ${e.toString()}"),
           );
         });
   }

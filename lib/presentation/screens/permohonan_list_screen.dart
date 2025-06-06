@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../widgets/permohonan_list_tile.dart';
+import '../widgets/app_drawer.dart'; // Import drawer
+import '../../app.dart'; // Import untuk mengakses routeObserver
 import './permohonan_detail_screen.dart';
 
 class PermohonanListScreen extends StatefulWidget {
@@ -13,12 +15,30 @@ class PermohonanListScreen extends StatefulWidget {
   State<PermohonanListScreen> createState() => _PermohonanListScreenState();
 }
 
-class _PermohonanListScreenState extends State<PermohonanListScreen> {
+class _PermohonanListScreenState extends State<PermohonanListScreen>
+    with RouteAware {
   @override
   void initState() {
     super.initState();
-    // Muat daftar permohonan saat layar pertama kali dibuka
-    context.read<PermohonanCubit>().loadPermohonanList();
+    // Pemuatan awal utama ditangani oleh pembuatan PermohonanCubit di app.dart.
+    // initState ini bisa berfungsi sebagai fallback jika state cubit masih PermohonanInitial
+    // saat layar ini dibangun untuk pertama kalinya.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          context.read<PermohonanCubit>().state is PermohonanInitial) {
+        context.read<PermohonanCubit>().loadPermohonanList();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ModalRoute? route = ModalRoute.of(context);
+    if (route != null) {
+      // Subscribe ke routeObserver untuk event navigasi
+      routeObserver.subscribe(this, route as PageRoute);
+    }
   }
 
   void _showAddPermohonanDialog(BuildContext context) {
@@ -58,14 +78,28 @@ class _PermohonanListScreenState extends State<PermohonanListScreen> {
   }
 
   @override
+  void dispose() {
+    routeObserver.unsubscribe(this); // Jangan lupa unsubscribe
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Dipanggil ketika rute teratas di-pop dan rute ini (PermohonanListScreen)
+    // menjadi rute saat ini/aktif kembali.
+    // Ini adalah tempat yang baik untuk memuat ulang atau me-refresh data daftar.
+    print("PermohonanListScreen: didPopNext - Memuat ulang daftar permohonan");
+    context.read<PermohonanCubit>().loadPermohonanList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Daftar Permohonan')),
+      drawer: const AppDrawer(), // Tambahkan drawer di sini
       body: BlocBuilder<PermohonanCubit, PermohonanState>(
         builder: (context, state) {
-          if (state is PermohonanLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is PermohonanListLoaded) {
+          if (state is PermohonanListLoaded) {
             if (state.permohonanList.isEmpty) {
               return const Center(child: Text('Belum ada permohonan.'));
             }
@@ -88,7 +122,9 @@ class _PermohonanListScreenState extends State<PermohonanListScreen> {
           } else if (state is PermohonanError) {
             return Center(child: Text('Error: ${state.message}'));
           }
-          return const Center(child: Text('Silakan muat data.'));
+          // Untuk state lainnya (PermohonanInitial, PermohonanLoading, PermohonanOperationSuccess, dll.),
+          // tampilkan indikator loading.
+          return const Center(child: CircularProgressIndicator());
         },
       ),
       floatingActionButton: FloatingActionButton(

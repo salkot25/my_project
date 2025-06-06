@@ -18,18 +18,23 @@ class FormPermohonanWidget extends StatefulWidget {
 class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
   final _formKey = GlobalKey<FormState>();
   Prioritas? _selectedPrioritas;
+  JenisPermohonan? _selectedJenisPermohonan;
+  final _dayaController = TextEditingController();
   final _catatanController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _selectedPrioritas = widget.permohonan.prioritas;
+    _selectedJenisPermohonan = widget.permohonan.jenisPermohonan;
+    _dayaController.text = widget.permohonan.daya ?? '';
     _catatanController.text = widget.permohonan.catatanPermohonan ?? '';
   }
 
   @override
   void dispose() {
     _catatanController.dispose();
+    _dayaController.dispose();
     super.dispose();
   }
 
@@ -37,6 +42,10 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
     if (_formKey.currentState!.validate()) {
       final formData = {
         'prioritas': _selectedPrioritas
+            ?.toString()
+            .split('.')
+            .last, // Simpan sebagai string
+        'jenis_permohonan': _selectedJenisPermohonan
             ?.toString()
             .split('.')
             .last, // Simpan sebagai string
@@ -59,6 +68,42 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
           ),
           Text('ID Permohonan: ${widget.permohonan.id}'),
           const SizedBox(height: 20),
+          const Text(
+            'Jenis Permohonan:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          DropdownButtonFormField<JenisPermohonan>(
+            value: _selectedJenisPermohonan,
+            hint: const Text('Pilih Jenis Permohonan'),
+            items: JenisPermohonan.values.map((JenisPermohonan value) {
+              return DropdownMenuItem<JenisPermohonan>(
+                value: value,
+                child: Text(
+                  value == JenisPermohonan.pasangBaru
+                      ? 'Pasang Baru'
+                      : 'Perubahan Daya',
+                ),
+              );
+            }).toList(),
+            onChanged: (JenisPermohonan? newValue) {
+              setState(() {
+                _selectedJenisPermohonan = newValue;
+              });
+            },
+            validator: (value) =>
+                value == null ? 'Jenis Permohonan harus dipilih' : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _dayaController,
+            decoration: const InputDecoration(
+              labelText: 'Daya (Contoh: 1300 VA)',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Daya harus diisi' : null,
+          ),
+          const SizedBox(height: 16),
           const Text(
             'Prioritas:',
             style: TextStyle(fontWeight: FontWeight.bold),

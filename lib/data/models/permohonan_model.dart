@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'tahapan_model.dart';
 import '../../core/constants/app_stages.dart'; // Sesuaikan path jika berbeda
 
+enum JenisPermohonan { pasangBaru, perubahanDaya }
+
 enum StatusPermohonan { proses, selesai, dibatalkan }
 
 enum Prioritas { rendah, sedang, tinggi }
@@ -14,6 +16,8 @@ class PermohonanModel extends Equatable {
   final StatusPermohonan statusKeseluruhan;
   final Prioritas? prioritas; // Tambahkan prioritas
   final String? catatanPermohonan; // Tambahkan catatan awal
+  final JenisPermohonan? jenisPermohonan;
+  final String? daya; // Misal: "1300 VA", "2200 VA"
 
   const PermohonanModel({
     required this.id,
@@ -23,6 +27,8 @@ class PermohonanModel extends Equatable {
     this.statusKeseluruhan = StatusPermohonan.proses,
     this.prioritas,
     this.catatanPermohonan,
+    this.jenisPermohonan,
+    this.daya,
   });
 
   factory PermohonanModel.fromMap(
@@ -43,6 +49,12 @@ class PermohonanModel extends Equatable {
             )
           : null,
       catatanPermohonan: map['catatan_permohonan'] as String?,
+      jenisPermohonan: map['jenis_permohonan'] != null
+          ? JenisPermohonan.values.firstWhere(
+              (e) => e.toString().split('.').last == map['jenis_permohonan'],
+            )
+          : null,
+      daya: map['daya'] as String?,
     );
   }
 
@@ -63,6 +75,8 @@ class PermohonanModel extends Equatable {
       daftarTahapan: tahapanAwal,
       // prioritas dan catatanPermohonan bisa diisi dari form awal
       // atau dibiarkan null dan diisi pada tahap pertama
+      // jenisPermohonan dan daya juga bisa diisi dari form awal
+      // atau dibiarkan null dan diisi pada tahap pertama
     );
   }
 
@@ -74,6 +88,8 @@ class PermohonanModel extends Equatable {
     StatusPermohonan? statusKeseluruhan,
     Prioritas? prioritas,
     String? catatanPermohonan,
+    JenisPermohonan? jenisPermohonan,
+    String? daya,
   }) {
     return PermohonanModel(
       id: id ?? this.id,
@@ -83,6 +99,8 @@ class PermohonanModel extends Equatable {
       statusKeseluruhan: statusKeseluruhan ?? this.statusKeseluruhan,
       prioritas: prioritas ?? this.prioritas,
       catatanPermohonan: catatanPermohonan ?? this.catatanPermohonan,
+      jenisPermohonan: jenisPermohonan ?? this.jenisPermohonan,
+      daya: daya ?? this.daya,
     );
   }
 
@@ -95,14 +113,21 @@ class PermohonanModel extends Equatable {
     statusKeseluruhan,
     prioritas,
     catatanPermohonan,
+    jenisPermohonan,
+    daya,
   ];
 
   String get tahapanAktif {
-    final aktif = daftarTahapan.firstWhere(
-      (t) => t.isAktif,
-      orElse: () => const TahapanModel(nama: "N/A"),
-    );
-    if (statusKeseluruhan == StatusPermohonan.selesai) return "Selesai";
-    return aktif.nama;
+    if (statusKeseluruhan == StatusPermohonan.selesai) {
+      return "Selesai";
+    }
+    if (statusKeseluruhan == StatusPermohonan.dibatalkan) {
+      return "Dibatalkan";
+    }
+    // Jika status proses
+    final aktif = daftarTahapan.where((t) => t.isAktif).toList();
+    if (aktif.isNotEmpty) return aktif.first.nama;
+
+    return "Proses"; // Fallback jika status 'proses' tapi tidak ada tahap aktif
   }
 }

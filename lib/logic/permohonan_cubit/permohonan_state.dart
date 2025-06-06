@@ -37,3 +37,11 @@ class PermohonanError extends PermohonanState {
   @override
   List<Object?> get props => [message];
 }
+
+class PermohonanOperationSuccess extends PermohonanState {
+  final String message;
+  const PermohonanOperationSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

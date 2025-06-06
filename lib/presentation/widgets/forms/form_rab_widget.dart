@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class FormRabWidget extends StatefulWidget {
   final Function(Map<String, dynamic> formData) onSubmit;
   final Map<String, dynamic>? initialData; // Untuk pre-fill jika ada
+  final Map<String, dynamic>? surveyData; // Data dari tahap survey
 
-  const FormRabWidget({super.key, required this.onSubmit, this.initialData});
+  const FormRabWidget({
+    super.key,
+    required this.onSubmit,
+    this.initialData,
+    this.surveyData,
+  });
 
   @override
   State<FormRabWidget> createState() => _FormRabWidgetState();
@@ -54,6 +60,43 @@ class _FormRabWidgetState extends State<FormRabWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (widget.surveyData != null && widget.surveyData!.isNotEmpty) ...[
+            Text(
+              'Informasi dari Survey Lokasi:',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            if (widget.surveyData!['jenis_layanan'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  'Jenis Layanan: ${widget.surveyData!['jenis_layanan']}',
+                ),
+              ),
+            if (widget.surveyData!['alamat_survey'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  'Alamat Survey: ${widget.surveyData!['alamat_survey']}',
+                ),
+              ),
+            if (widget.surveyData!['catatan_survey'] != null &&
+                widget.surveyData!['catatan_survey'].isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: Text(
+                  'Catatan Survey: ${widget.surveyData!['catatan_survey']}',
+                ),
+              ),
+            const Divider(height: 20, thickness: 1),
+          ],
+          Text(
+            'Input Data RAB',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _ukuranTrafoController,
             decoration: const InputDecoration(
