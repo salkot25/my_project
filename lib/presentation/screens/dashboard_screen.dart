@@ -108,7 +108,11 @@ class DashboardScreen extends StatelessWidget {
                             icon: Icons.folder,
                             value: filteredTotal.toString(),
                             label: 'Total Proyek',
-                            color: Colors.blue,
+                            color: Colors.lightBlue,
+                            gradientColors: [
+                              Colors.lightBlue.shade300,
+                              Colors.lightBlue.shade600,
+                            ],
                           ),
                           const SizedBox(width: 16),
                           _DashboardCard(
@@ -116,13 +120,21 @@ class DashboardScreen extends StatelessWidget {
                             value: filteredSelesai.toString(),
                             label: 'Selesai',
                             color: Colors.green,
+                            gradientColors: [
+                              Colors.green.shade300,
+                              Colors.green.shade600,
+                            ],
                           ),
                           const SizedBox(width: 16),
                           _DashboardCard(
                             icon: Icons.access_time,
                             value: filteredProses.toString(),
                             label: 'Proses',
-                            color: Colors.orange,
+                            color: Colors.deepOrange,
+                            gradientColors: [
+                              Colors.deepOrange.shade300,
+                              Colors.deepOrange.shade600,
+                            ],
                           ),
                         ],
                       ),
@@ -269,25 +281,33 @@ class _DashboardCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
+  final List<Color> gradientColors;
+
   const _DashboardCard({
     required this.icon,
     required this.value,
     required this.label,
     required this.color,
+    required this.gradientColors,
   });
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        height: 110,
+        height: 120,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+          ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 2),
+              color: color.withOpacity(0.3),
+              blurRadius: 8,
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -295,18 +315,24 @@ class _DashboardCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 36),
+            Icon(icon, color: Colors.white, size: 36),
             const SizedBox(height: 8),
             Text(
               value,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 15)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.white.withOpacity(0.9),
+              ),
+            ),
           ],
         ),
       ),
