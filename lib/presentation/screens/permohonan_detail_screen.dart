@@ -10,6 +10,7 @@ import '../widgets/forms/form_rab_widget.dart'; // Import form
 import '../widgets/forms/form_kontrak_rinci_widget.dart'; // Import form
 import '../widgets/forms/form_pasang_app_widget.dart'; // Import form
 import 'package:intl/intl.dart';
+import 'package:timeline_tile/timeline_tile.dart';
 
 extension FirstWhereOrNullExtension<E> on Iterable<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -70,7 +71,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
           onSubmit: handleFormSubmit,
           initialData: tahapanAktif.formData,
         );
-      // case "MOM":
       case "MOM":
         return FormMomWidget(
           onSubmit: handleFormSubmit,
@@ -101,10 +101,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
           onSubmit: handleFormSubmit,
           initialData: tahapanAktif.formData,
         );
-      //   return FormMomWidget(onSubmit: handleFormSubmit, initialData: tahapanAktif.formData);
-      // ... tambahkan case untuk form lainnya
       default:
-        // Jika tidak ada form khusus, tampilkan tombol default untuk menyelesaikan tahap
         return Center(
           child: ElevatedButton(
             onPressed: () => context.read<PermohonanCubit>().advanceToNextStage(
@@ -138,7 +135,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
-          // Untuk update state di dalam dialog (prioritas dropdown)
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('Edit Detail Permohonan'),
@@ -160,6 +156,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<JenisPermohonan>(
                         value: selectedJenisPermohonan,
+                        hint: const Text('Pilih Jenis Permohonan'),
                         items: JenisPermohonan.values.map((
                           JenisPermohonan value,
                         ) {
@@ -173,7 +170,9 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                             selectedJenisPermohonan = newValue;
                           });
                         },
-                        // validator: (value) => value == null ? 'Jenis Permohonan harus dipilih' : null, // Bisa opsional jika boleh kosong
+                        decoration: const InputDecoration(
+                          labelText: 'Jenis Permohonan',
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -181,7 +180,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                         decoration: const InputDecoration(
                           labelText: "Daya (Contoh: 1300 VA)",
                         ),
-                        // validator: (value) => value == null || value.isEmpty ? 'Daya tidak boleh kosong' : null, // Bisa opsional
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<Prioritas>(
@@ -201,7 +199,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Prioritas',
                         ),
-                        // validator: (value) => value == null ? 'Prioritas harus dipilih' : null, // Prioritas bisa opsional
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -301,7 +298,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
               onPressed: () {
                 context.read<PermohonanCubit>().hapusPermohonan(permohonan.id);
                 Navigator.of(dialogContext).pop();
-                // Navigasi kembali ke list screen setelah dialog ditutup dan cubit memproses
               },
               child: const Text('Ya, Hapus'),
             ),
@@ -470,7 +466,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
       children: fields.entries.map((entry) {
         final key = entry.key;
         var value = entry.value;
-        // Format tanggal untuk field tanggal_survey, tanggal_mom, tanggal_pasang
         if (key == 'tanggal_survey' ||
             key == 'tanggal_mom' ||
             key == 'tanggal_pasang') {
@@ -573,7 +568,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
-            Navigator.of(context).pop(); // Kembali ke layar sebelumnya (list)
+            Navigator.of(context).pop();
           }
         },
         builder: (context, state) {
@@ -581,7 +576,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           } else if (state is PermohonanDetailLoaded) {
             final permohonan = state.permohonan;
-
             final bool canModify =
                 permohonan.statusKeseluruhan == StatusPermohonan.proses;
 
@@ -630,7 +624,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
-                    // Header Card
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -670,12 +663,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                // HAPUS BARIS INI:
-                                // Text(
-                                //   'ID: {permohonan.id}',
-                                //   style: const TextStyle(color: Colors.white70),
-                                // ),
-                                const SizedBox(height: 2),
                                 Text(
                                   'Diajukan: ${DateFormat('dd MMM yyyy').format(permohonan.tanggalPengajuan)}',
                                   style: const TextStyle(color: Colors.white70),
@@ -687,7 +674,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Info Card
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -929,7 +915,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Progres Tahapan
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -978,7 +963,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                             itemBuilder: (context, index) {
                               final tahapan = permohonan.daftarTahapan[index];
                               final isExpandable = !tahapan.isMenunggu;
-                              // Expand otomatis jika tahapan aktif dan formData kosong/null
                               final isExpanded =
                                   tahapan.isAktif &&
                                       (tahapan.formData == null ||
@@ -986,7 +970,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                   ? true
                                   : _expandedTahapanIndex == index;
                               final isEditMode = _expandedEditIndex == index;
-                              // Timeline color logic
                               Color dotColor;
                               if (tahapan.status == StatusTahapan.selesai) {
                                 dotColor = const Color(0xFF22C55E);
@@ -998,310 +981,277 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                               } else {
                                 dotColor = Colors.blue.shade300;
                               }
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Timeline
-                                  SizedBox(
-                                    width: 28,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (index != 0)
-                                          Container(
-                                            width: 2,
-                                            height: 18,
-                                            color: Colors.grey.shade200,
-                                          ),
-                                        Container(
-                                          width: 14,
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: dotColor,
-                                              width: 4,
-                                            ),
-                                          ),
-                                        ),
-                                        if (index !=
-                                            permohonan.daftarTahapan.length - 1)
-                                          Container(
-                                            width: 2,
-                                            height: 18,
-                                            color: Colors.grey.shade200,
-                                          ),
-                                      ],
+
+                              return TimelineTile(
+                                axis: TimelineAxis.vertical,
+                                alignment: TimelineAlign.manual,
+                                lineXY: 0.1,
+                                isFirst: index == 0,
+                                isLast:
+                                    index ==
+                                    permohonan.daftarTahapan.length - 1,
+                                indicatorStyle: IndicatorStyle(
+                                  width: 28,
+                                  height: 14,
+                                  indicatorXY: 0.5,
+                                  indicator: Container(
+                                    width: 14,
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: dotColor,
+                                        width: 4,
+                                      ),
                                     ),
                                   ),
-                                  // Card tahapan minimalist
-                                  Expanded(
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 180,
-                                      ),
-                                      margin: const EdgeInsets.symmetric(
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isExpanded
-                                            ? Colors.blue.shade50
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(13),
-                                        border: Border.all(
-                                          color: isExpanded
-                                              ? Colors.blue.shade300
-                                              : Colors.grey.shade200,
-                                          width: isExpanded ? 1.7 : 1.0,
+                                  padding: const EdgeInsets.only(
+                                    top: 18,
+                                    bottom: 18,
+                                  ),
+                                ),
+                                beforeLineStyle: LineStyle(
+                                  color: Colors.grey.shade300,
+                                  thickness: 2,
+                                ),
+                                afterLineStyle: LineStyle(
+                                  color: Colors.grey.shade300,
+                                  thickness: 2,
+                                ),
+                                endChild: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  margin: const EdgeInsets.only(
+                                    left: 12,
+                                    right: 0,
+                                    top: 6,
+                                    bottom: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isExpanded
+                                        ? Colors.blue.shade50
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(13),
+                                    border: Border.all(
+                                      color: isExpanded
+                                          ? Colors.blue.shade300
+                                          : Colors.grey.shade200,
+                                      width: isExpanded ? 1.7 : 1.0,
+                                    ),
+                                    boxShadow: [
+                                      if (isExpanded)
+                                        BoxShadow(
+                                          color: Colors.blue.shade100
+                                              .withOpacity(0.13),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
-                                        boxShadow: [
-                                          if (isExpanded)
-                                            BoxShadow(
-                                              color: Colors.blue.shade100
-                                                  .withOpacity(0.13),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          InkWell(
-                                            borderRadius: BorderRadius.circular(
-                                              13,
-                                            ),
-                                            onTap: isExpandable
-                                                ? () {
-                                                    setState(() {
-                                                      _expandedTahapanIndex =
-                                                          isExpanded
-                                                          ? null
-                                                          : index;
-                                                    });
-                                                  }
-                                                : null,
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 14,
-                                                    vertical: 13,
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(13),
+                                        onTap: isExpandable
+                                            ? () {
+                                                setState(() {
+                                                  _expandedTahapanIndex =
+                                                      isExpanded ? null : index;
+                                                });
+                                              }
+                                            : null,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 13,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                tahapan.nama,
+                                                style: TextStyle(
+                                                  fontWeight: tahapan.isAktif
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w600,
+                                                  fontSize: 14.5,
+                                                  color: tahapan.isAktif
+                                                      ? Colors.blue.shade700
+                                                      : tahapan.status ==
+                                                            StatusTahapan
+                                                                .selesai
+                                                      ? const Color(0xFF22C55E)
+                                                      : Colors.grey.shade700,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 2,
+                                                      horizontal: 10,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      tahapan.status ==
+                                                          StatusTahapan.selesai
+                                                      ? const Color(0xFF22C55E)
+                                                      : tahapan.isAktif
+                                                      ? const Color(0xFFF59E42)
+                                                      : tahapan.status ==
+                                                            StatusTahapan
+                                                                .menunggu
+                                                      ? Colors.grey.shade300
+                                                      : Colors.blue.shade300,
+                                                  borderRadius:
+                                                      BorderRadius.circular(7),
+                                                ),
+                                                child: Text(
+                                                  tahapan.status ==
+                                                          StatusTahapan.selesai
+                                                      ? 'Selesai'
+                                                      : tahapan.isAktif
+                                                      ? 'Aktif'
+                                                      : tahapan.status ==
+                                                            StatusTahapan
+                                                                .menunggu
+                                                      ? 'Menunggu'
+                                                      : 'Proses',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 12.5,
+                                                    letterSpacing: 0.3,
                                                   ),
-                                              child: Row(
+                                                ),
+                                              ),
+                                              if (isExpandable)
+                                                Icon(
+                                                  isExpanded
+                                                      ? Icons.expand_less
+                                                      : Icons.expand_more,
+                                                  color: Colors.blue.shade300,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      if (isExpanded && isExpandable)
+                                        Container(
+                                          margin: const EdgeInsets.only(
+                                            left: 8,
+                                            right: 8,
+                                            bottom: 12,
+                                            top: 0,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 18,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.blue.shade100,
+                                              width: 1.2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.blue.shade100
+                                                    .withOpacity(0.08),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
                                                 children: [
                                                   Text(
-                                                    tahapan.nama,
+                                                    'Detail ${tahapan.nama}',
                                                     style: TextStyle(
                                                       fontWeight:
-                                                          tahapan.isAktif
-                                                          ? FontWeight.w700
-                                                          : FontWeight.w600,
-                                                      fontSize: 14.5,
-                                                      color: tahapan.isAktif
-                                                          ? Colors.blue.shade700
-                                                          : tahapan.status ==
-                                                                StatusTahapan
-                                                                    .selesai
-                                                          ? const Color(
-                                                              0xFF22C55E,
-                                                            )
-                                                          : Colors
-                                                                .grey
-                                                                .shade700,
+                                                          FontWeight.w700,
+                                                      fontSize: 15.5,
+                                                      color:
+                                                          Colors.blue.shade700,
                                                     ),
                                                   ),
                                                   const Spacer(),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 2,
-                                                          horizontal: 10,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          tahapan.status ==
-                                                              StatusTahapan
-                                                                  .selesai
-                                                          ? const Color(
-                                                              0xFF22C55E,
-                                                            )
-                                                          : tahapan.isAktif
-                                                          ? const Color(
-                                                              0xFFF59E42,
-                                                            )
-                                                          : tahapan.status ==
-                                                                StatusTahapan
-                                                                    .menunggu
-                                                          ? Colors.grey.shade300
-                                                          : Colors
-                                                                .blue
-                                                                .shade300,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            7,
-                                                          ),
-                                                    ),
-                                                    child: Text(
-                                                      tahapan.status ==
-                                                              StatusTahapan
-                                                                  .selesai
-                                                          ? 'Selesai'
-                                                          : tahapan.isAktif
-                                                          ? 'Aktif'
-                                                          : tahapan.status ==
-                                                                StatusTahapan
-                                                                    .menunggu
-                                                          ? 'Menunggu'
-                                                          : 'Proses',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        fontSize: 12.5,
-                                                        letterSpacing: 0.3,
+                                                  if (!tahapan.isAktif &&
+                                                      canModify)
+                                                    OutlinedButton.icon(
+                                                      icon: const Icon(
+                                                        Icons.edit,
+                                                        size: 18,
                                                       ),
-                                                    ),
-                                                  ),
-                                                  if (isExpandable)
-                                                    Icon(
-                                                      isExpanded
-                                                          ? Icons.expand_less
-                                                          : Icons.expand_more,
-                                                      color:
-                                                          Colors.blue.shade300,
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          if (isExpanded && isExpandable)
-                                            Container(
-                                              margin: const EdgeInsets.only(
-                                                left: 8,
-                                                right: 8,
-                                                bottom: 12,
-                                                top: 0,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 18,
-                                                    vertical: 18,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: Colors.blue.shade100,
-                                                  width: 1.2,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.blue.shade100
-                                                        .withOpacity(0.08),
-                                                    blurRadius: 8,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.stretch,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Text(
-                                                        'Detail ${tahapan.nama}',
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          fontSize: 15.5,
+                                                      label: const Text('Edit'),
+                                                      style: OutlinedButton.styleFrom(
+                                                        foregroundColor: Colors
+                                                            .blue
+                                                            .shade700,
+                                                        side: BorderSide(
                                                           color: Colors
                                                               .blue
-                                                              .shade700,
+                                                              .shade200,
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 14,
+                                                              vertical: 8,
+                                                            ),
+                                                        textStyle:
+                                                            const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
                                                         ),
                                                       ),
-                                                      const Spacer(),
-                                                      if (!tahapan.isAktif &&
-                                                          canModify)
-                                                        OutlinedButton.icon(
-                                                          icon: const Icon(
-                                                            Icons.edit,
-                                                            size: 18,
-                                                          ),
-                                                          label: const Text(
-                                                            'Edit',
-                                                          ),
-                                                          style: OutlinedButton.styleFrom(
-                                                            foregroundColor:
-                                                                Colors
-                                                                    .blue
-                                                                    .shade700,
-                                                            side: BorderSide(
-                                                              color: Colors
-                                                                  .blue
-                                                                  .shade200,
-                                                            ),
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal:
-                                                                      14,
-                                                                  vertical: 8,
-                                                                ),
-                                                            textStyle:
-                                                                const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    8,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              _expandedEditIndex =
-                                                                  index;
-                                                            });
-                                                          },
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 14),
-                                                  // Jika tahapan aktif dan data kosong, langsung tampilkan form input
-                                                  if (tahapan.isAktif &&
-                                                      (tahapan.formData ==
-                                                              null ||
-                                                          tahapan
-                                                              .formData!
-                                                              .isEmpty))
-                                                    _buildCurrentStageForm(
-                                                      permohonan,
-                                                      tahapan,
-                                                    )
-                                                  else if (isEditMode &&
-                                                      !tahapan.isAktif)
-                                                    // Form edit tahapan lain (selain aktif)
-                                                    _buildCurrentStageForm(
-                                                      permohonan,
-                                                      tahapan,
-                                                    )
-                                                  else
-                                                    // Summary tahapan
-                                                    _buildTahapanFormSummary(
-                                                      tahapan,
+                                                      onPressed: () {
+                                                        setState(() {
+                                                          _expandedEditIndex =
+                                                              index;
+                                                        });
+                                                      },
                                                     ),
                                                 ],
                                               ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
+                                              const SizedBox(height: 14),
+                                              if (tahapan.isAktif &&
+                                                  (tahapan.formData == null ||
+                                                      tahapan
+                                                          .formData!
+                                                          .isEmpty))
+                                                _buildCurrentStageForm(
+                                                  permohonan,
+                                                  tahapan,
+                                                )
+                                              else if (isEditMode &&
+                                                  !tahapan.isAktif)
+                                                _buildCurrentStageForm(
+                                                  permohonan,
+                                                  tahapan,
+                                                )
+                                              else
+                                                _buildTahapanFormSummary(
+                                                  tahapan,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               );
                             },
                           ),
@@ -1321,8 +1271,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
   }
 }
 
-// Tambahkan widget _TahapanProgressCircle di bawah file ini
-
 class _TahapanProgressCircle extends StatelessWidget {
   final int total;
   final int done;
@@ -1340,7 +1288,6 @@ class _TahapanProgressCircle extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background shadow circle
           Container(
             width: 72,
             height: 72,
@@ -1355,7 +1302,6 @@ class _TahapanProgressCircle extends StatelessWidget {
               ],
             ),
           ),
-          // Background circle (track)
           SizedBox(
             width: 64,
             height: 64,
@@ -1365,7 +1311,6 @@ class _TahapanProgressCircle extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(bgColor),
             ),
           ),
-          // Foreground progress
           SizedBox(
             width: 64,
             height: 64,
@@ -1376,7 +1321,6 @@ class _TahapanProgressCircle extends StatelessWidget {
               backgroundColor: Colors.transparent,
             ),
           ),
-          // Centered percent text
           Text(
             '$percentValue%',
             style: const TextStyle(

@@ -74,6 +74,8 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
                 child: Text(value.label),
               );
             }).toList(),
+            isExpanded:
+                true, // Tambahkan ini untuk membuat item dropdown mengisi lebar
             onChanged: (JenisPermohonan? newValue) {
               setState(() {
                 _selectedJenisPermohonan = newValue;
@@ -131,6 +133,8 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
                 child: Text(value.label),
               );
             }).toList(),
+            isExpanded:
+                true, // Tambahkan ini untuk membuat item dropdown mengisi lebar
             onChanged: (Prioritas? newValue) {
               setState(() {
                 _selectedPrioritas = newValue;
