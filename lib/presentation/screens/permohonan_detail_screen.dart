@@ -517,38 +517,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                               ],
                             ),
                           ),
-                          Chip(
-                            label: Text(
-                              permohonan.statusKeseluruhan ==
-                                      StatusPermohonan.proses
-                                  ? (() {
-                                      final aktif = permohonan.daftarTahapan
-                                          .where((t) => t.isAktif)
-                                          .toList();
-                                      return aktif.isNotEmpty
-                                          ? aktif.first.nama
-                                          : 'Proses';
-                                    })()
-                                  : permohonan.statusKeseluruhan.name
-                                        .toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            backgroundColor:
-                                permohonan.statusKeseluruhan ==
-                                    StatusPermohonan.selesai
-                                ? Colors.green
-                                : permohonan.statusKeseluruhan ==
-                                      StatusPermohonan.dibatalkan
-                                ? Colors.red
-                                : Colors.orange,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 2,
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -557,62 +525,245 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1.1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: Colors.grey.withOpacity(0.02),
+                            blurRadius: 1.5,
+                            offset: const Offset(0, 1),
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 18,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.blue.shade400,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'Info Permohonan',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.5,
+                                  color: Colors.grey.shade600,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      permohonan.statusKeseluruhan ==
+                                          StatusPermohonan.selesai
+                                      ? const Color(0xFF22C55E)
+                                      : permohonan.statusKeseluruhan ==
+                                            StatusPermohonan.dibatalkan
+                                      ? const Color(0xFFF43F5E)
+                                      : const Color(0xFFF59E42),
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (permohonan.statusKeseluruhan ==
+                                        StatusPermohonan.selesai)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 16,
+                                        color: Colors.white.withOpacity(0.92),
+                                      ),
+                                    if (permohonan.statusKeseluruhan ==
+                                        StatusPermohonan.dibatalkan)
+                                      Icon(
+                                        Icons.cancel_rounded,
+                                        size: 16,
+                                        color: Colors.white.withOpacity(0.92),
+                                      ),
+                                    if (permohonan.statusKeseluruhan ==
+                                        StatusPermohonan.proses)
+                                      Icon(
+                                        Icons.timelapse_rounded,
+                                        size: 16,
+                                        color: Colors.white.withOpacity(0.92),
+                                      ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      permohonan.statusKeseluruhan ==
+                                              StatusPermohonan.proses
+                                          ? (() {
+                                              final aktif = permohonan
+                                                  .daftarTahapan
+                                                  .where((t) => t.isAktif)
+                                                  .toList();
+                                              return aktif.isNotEmpty
+                                                  ? aktif.first.nama
+                                                  : 'Proses';
+                                            })()
+                                          : permohonan.statusKeseluruhan ==
+                                                StatusPermohonan.selesai
+                                          ? 'SELESAI'
+                                          : permohonan.statusKeseluruhan ==
+                                                StatusPermohonan.dibatalkan
+                                          ? 'DIBATALKAN'
+                                          : permohonan.statusKeseluruhan.name
+                                                .toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12.5,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const Divider(),
+                          const SizedBox(height: 10),
+                          Divider(
+                            color: Colors.grey.shade100,
+                            thickness: 1,
+                            height: 1,
+                          ),
+                          const SizedBox(height: 14),
                           if (permohonan.jenisPermohonan != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                'Jenis: ${permohonan.jenisPermohonan == JenisPermohonan.pasangBaru ? "Pasang Baru" : "Perubahan Daya"}',
+                              padding: const EdgeInsets.only(bottom: 7),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Jenis',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      permohonan.jenisPermohonan ==
+                                              JenisPermohonan.pasangBaru
+                                          ? 'Pasang Baru'
+                                          : 'Perubahan Daya',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.5,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           if (permohonan.daya != null &&
                               permohonan.daya!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text('Daya: ${permohonan.daya}'),
+                              padding: const EdgeInsets.only(bottom: 7),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Daya',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      permohonan.daya!,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.5,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           if (permohonan.prioritas != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                'Prioritas: ${permohonan.prioritas.toString().split(".").last.toUpperCase()}',
+                              padding: const EdgeInsets.only(bottom: 7),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Prioritas',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      permohonan.prioritas
+                                          .toString()
+                                          .split(".")
+                                          .last
+                                          .toUpperCase(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14.5,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           if (permohonan.catatanPermohonan != null &&
                               permohonan.catatanPermohonan!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                'Catatan: ${permohonan.catatanPermohonan}',
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Catatan',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      permohonan.catatanPermohonan!,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13.5,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.05,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],
@@ -626,30 +777,41 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: Colors.grey.withOpacity(0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.timeline, color: Colors.blue.shade400),
+                              Icon(
+                                Icons.timeline,
+                                color: Colors.blue.shade400,
+                                size: 22,
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Progres Tahapan',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15.5,
+                                  letterSpacing: 0.1,
                                 ),
                               ),
                             ],
                           ),
-                          const Divider(),
+                          const SizedBox(height: 6),
+                          Divider(
+                            color: Colors.grey.shade100,
+                            thickness: 1,
+                            height: 1,
+                          ),
+                          const SizedBox(height: 2),
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -661,35 +823,33 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                               // Timeline color logic
                               Color dotColor;
                               if (tahapan.status == StatusTahapan.selesai) {
-                                dotColor = Colors.green;
+                                dotColor = const Color(0xFF22C55E);
                               } else if (tahapan.isAktif) {
-                                dotColor = Colors.orangeAccent.shade700;
+                                dotColor = const Color(0xFFF59E42);
                               } else if (tahapan.status ==
                                   StatusTahapan.menunggu) {
-                                dotColor = Colors.grey.shade400;
+                                dotColor = Colors.grey.shade300;
                               } else {
-                                dotColor = Colors.blue.shade400;
+                                dotColor = Colors.blue.shade300;
                               }
                               return Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // Timeline
                                   SizedBox(
-                                    width: 32,
+                                    width: 28,
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        // Garis atas (jika bukan tahapan pertama)
                                         if (index != 0)
                                           Container(
                                             width: 2,
-                                            height: 24,
-                                            color: Colors.grey.shade300,
+                                            height: 18,
+                                            color: Colors.grey.shade200,
                                           ),
-                                        // Dot status
                                         Container(
-                                          width: 18,
-                                          height: 18,
+                                          width: 14,
+                                          height: 14,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             shape: BoxShape.circle,
@@ -699,36 +859,52 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                             ),
                                           ),
                                         ),
-                                        // Garis bawah (jika bukan tahapan terakhir)
                                         if (index !=
                                             permohonan.daftarTahapan.length - 1)
                                           Container(
                                             width: 2,
-                                            height: 24,
-                                            color: Colors.grey.shade300,
+                                            height: 18,
+                                            color: Colors.grey.shade200,
                                           ),
                                       ],
                                     ),
                                   ),
-                                  // Card tahapan
+                                  // Card tahapan minimalist
                                   Expanded(
-                                    child: Card(
-                                      elevation: isExpanded ? 8 : 2,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        side: BorderSide(
-                                          color: isExpanded
-                                              ? Colors.blue.shade400
-                                              : Colors.grey.shade300,
-                                          width: isExpanded ? 2.2 : 1.0,
-                                        ),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 180,
                                       ),
                                       margin: const EdgeInsets.symmetric(
-                                        vertical: 8,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isExpanded
+                                            ? Colors.blue.shade50
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(13),
+                                        border: Border.all(
+                                          color: isExpanded
+                                              ? Colors.blue.shade300
+                                              : Colors.grey.shade200,
+                                          width: isExpanded ? 1.7 : 1.0,
+                                        ),
+                                        boxShadow: [
+                                          if (isExpanded)
+                                            BoxShadow(
+                                              color: Colors.blue.shade100
+                                                  .withOpacity(0.13),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                        ],
                                       ),
                                       child: Column(
                                         children: [
-                                          GestureDetector(
+                                          InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              13,
+                                            ),
                                             onTap: isExpandable
                                                 ? () {
                                                     setState(() {
@@ -739,35 +915,129 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                     });
                                                   }
                                                 : null,
-                                            child: TahapanListItem(
-                                              tahapan: tahapan,
-                                              index: index,
-                                              totalTahapan: permohonan
-                                                  .daftarTahapan
-                                                  .length,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 13,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    tahapan.nama,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          tahapan.isAktif
+                                                          ? FontWeight.w700
+                                                          : FontWeight.w600,
+                                                      fontSize: 14.5,
+                                                      color: tahapan.isAktif
+                                                          ? Colors.blue.shade700
+                                                          : tahapan.status ==
+                                                                StatusTahapan
+                                                                    .selesai
+                                                          ? const Color(
+                                                              0xFF22C55E,
+                                                            )
+                                                          : Colors
+                                                                .grey
+                                                                .shade700,
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          tahapan.status ==
+                                                              StatusTahapan
+                                                                  .selesai
+                                                          ? const Color(
+                                                              0xFF22C55E,
+                                                            )
+                                                          : tahapan.isAktif
+                                                          ? const Color(
+                                                              0xFFF59E42,
+                                                            )
+                                                          : Colors
+                                                                .grey
+                                                                .shade200,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            7,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      tahapan.status ==
+                                                              StatusTahapan
+                                                                  .selesai
+                                                          ? 'SELESAI'
+                                                          : tahapan.isAktif
+                                                          ? 'AKTIF'
+                                                          : tahapan.status ==
+                                                                StatusTahapan
+                                                                    .menunggu
+                                                          ? 'MENUNGGU'
+                                                          : 'PROSES',
+                                                      style: TextStyle(
+                                                        color:
+                                                            tahapan.status ==
+                                                                StatusTahapan
+                                                                    .selesai
+                                                            ? Colors.white
+                                                            : tahapan.isAktif
+                                                            ? Colors.white
+                                                            : Colors
+                                                                  .grey
+                                                                  .shade600,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 11.5,
+                                                        letterSpacing: 0.2,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (isExpandable)
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            left: 8,
+                                                          ),
+                                                      child: Icon(
+                                                        isExpanded
+                                                            ? Icons.expand_less
+                                                            : Icons.expand_more,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade400,
+                                                        size: 22,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                           if (isExpanded && isExpandable)
                                             Container(
                                               margin: const EdgeInsets.only(
-                                                left: 16,
-                                                right: 16,
-                                                bottom: 16,
-                                                top: 4,
+                                                left: 8,
+                                                right: 8,
+                                                bottom: 12,
+                                                top: 0,
                                               ),
                                               padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
-                                                color: Colors.grey.shade50,
+                                                color: Colors.white,
                                                 borderRadius:
-                                                    BorderRadius.circular(10),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.grey
-                                                        .withOpacity(0.08),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
+                                                    BorderRadius.circular(9),
+                                                border: Border.all(
+                                                  color: Colors.grey.shade100,
+                                                  width: 1,
+                                                ),
                                               ),
                                               child:
                                                   tahapan.isAktif && canModify
