@@ -11,6 +11,15 @@ import '../widgets/forms/form_kontrak_rinci_widget.dart'; // Import form
 import '../widgets/forms/form_pasang_app_widget.dart'; // Import form
 import 'package:intl/intl.dart';
 
+extension FirstWhereOrNullExtension<E> on Iterable<E> {
+  E? firstWhereOrNull(bool Function(E) test) {
+    for (var element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
 class PermohonanDetailScreen extends StatefulWidget {
   const PermohonanDetailScreen({super.key, required this.permohonanId});
 
@@ -23,6 +32,7 @@ class PermohonanDetailScreen extends StatefulWidget {
 
 class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
   int? _expandedTahapanIndex;
+  int? _expandedEditIndex; // index tahapan yang sedang diedit manual
 
   @override
   void initState() {
@@ -41,6 +51,12 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
         tahapanAktif.nama,
         formData,
       );
+      // Jika sedang edit manual (bukan tahapan aktif), keluar dari mode edit setelah submit
+      if (_expandedEditIndex != null) {
+        setState(() {
+          _expandedEditIndex = null;
+        });
+      }
     }
 
     switch (tahapanAktif.nama) {
@@ -144,17 +160,12 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<JenisPermohonan>(
                         value: selectedJenisPermohonan,
-                        hint: const Text('Pilih Jenis Permohonan'),
                         items: JenisPermohonan.values.map((
                           JenisPermohonan value,
                         ) {
                           return DropdownMenuItem<JenisPermohonan>(
                             value: value,
-                            child: Text(
-                              value == JenisPermohonan.pasangBaru
-                                  ? 'Pasang Baru'
-                                  : 'Perubahan Daya',
-                            ),
+                            child: Text(value.label),
                           );
                         }).toList(),
                         onChanged: (JenisPermohonan? newValue) {
@@ -162,9 +173,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                             selectedJenisPermohonan = newValue;
                           });
                         },
-                        decoration: const InputDecoration(
-                          labelText: 'Jenis Permohonan',
-                        ),
                         // validator: (value) => value == null ? 'Jenis Permohonan harus dipilih' : null, // Bisa opsional jika boleh kosong
                       ),
                       const SizedBox(height: 16),
@@ -182,9 +190,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                         items: Prioritas.values.map((Prioritas value) {
                           return DropdownMenuItem<Prioritas>(
                             value: value,
-                            child: Text(
-                              value.toString().split('.').last.toUpperCase(),
-                            ),
+                            child: Text(value.label),
                           );
                         }).toList(),
                         onChanged: (Prioritas? newValue) {
@@ -307,9 +313,9 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
 
   Widget _buildTahapanFormSummary(TahapanModel tahapan) {
     final data = tahapan.formData ?? {};
-    final Map<String, dynamic> fields;
-    final Map<String, IconData> icons;
-    final Map<String, String> labels;
+    Map<String, dynamic> fields;
+    Map<String, IconData> icons;
+    Map<String, String> labels;
     switch (tahapan.nama) {
       case "Permohonan":
         fields = {
@@ -463,7 +469,39 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
     return Column(
       children: fields.entries.map((entry) {
         final key = entry.key;
-        final value = entry.value;
+        var value = entry.value;
+        // Format tanggal untuk field tanggal_survey, tanggal_mom, tanggal_pasang
+        if (key == 'tanggal_survey' ||
+            key == 'tanggal_mom' ||
+            key == 'tanggal_pasang') {
+          try {
+            final dt = DateTime.tryParse(value.toString());
+            if (dt != null) {
+              value = DateFormat('dd MMMM yyyy', 'id_ID').format(dt);
+            }
+          } catch (_) {}
+        }
+        if (key == 'jenis_permohonan') {
+          value =
+              JenisPermohonan.values
+                  .firstWhereOrNull((e) => e.name == value)
+                  ?.label ??
+              value;
+        }
+        if (key == 'prioritas') {
+          value =
+              Prioritas.values
+                  .firstWhereOrNull((e) => e.name == value)
+                  ?.label ??
+              value;
+        }
+        if (key == 'hasil_survey') {
+          value =
+              HasilSurvey.values
+                  .firstWhereOrNull((e) => e.name == value)
+                  ?.label ??
+              value;
+        }
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 7),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 13),
@@ -782,10 +820,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      permohonan.jenisPermohonan ==
-                                              JenisPermohonan.pasangBaru
-                                          ? 'Pasang Baru'
-                                          : 'Perubahan Daya',
+                                      permohonan.jenisPermohonan!.label,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14.5,
@@ -844,11 +879,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      permohonan.prioritas
-                                          .toString()
-                                          .split(".")
-                                          .last
-                                          .toUpperCase(),
+                                      permohonan.prioritas!.label,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14.5,
@@ -947,7 +978,14 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                             itemBuilder: (context, index) {
                               final tahapan = permohonan.daftarTahapan[index];
                               final isExpandable = !tahapan.isMenunggu;
-                              final isExpanded = _expandedTahapanIndex == index;
+                              // Expand otomatis jika tahapan aktif dan formData kosong/null
+                              final isExpanded =
+                                  tahapan.isAktif &&
+                                      (tahapan.formData == null ||
+                                          tahapan.formData!.isEmpty)
+                                  ? true
+                                  : _expandedTahapanIndex == index;
+                              final isEditMode = _expandedEditIndex == index;
                               // Timeline color logic
                               Color dotColor;
                               if (tahapan.status == StatusTahapan.selesai) {
@@ -1076,8 +1114,8 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                   Container(
                                                     padding:
                                                         const EdgeInsets.symmetric(
-                                                          horizontal: 8,
                                                           vertical: 2,
+                                                          horizontal: 10,
                                                         ),
                                                     decoration: BoxDecoration(
                                                       color:
@@ -1091,9 +1129,13 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                           ? const Color(
                                                               0xFFF59E42,
                                                             )
+                                                          : tahapan.status ==
+                                                                StatusTahapan
+                                                                    .menunggu
+                                                          ? Colors.grey.shade300
                                                           : Colors
-                                                                .grey
-                                                                .shade200,
+                                                                .blue
+                                                                .shade300,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                             7,
@@ -1103,47 +1145,30 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                       tahapan.status ==
                                                               StatusTahapan
                                                                   .selesai
-                                                          ? 'SELESAI'
+                                                          ? 'Selesai'
                                                           : tahapan.isAktif
-                                                          ? 'AKTIF'
+                                                          ? 'Aktif'
                                                           : tahapan.status ==
                                                                 StatusTahapan
                                                                     .menunggu
-                                                          ? 'MENUNGGU'
-                                                          : 'PROSES',
-                                                      style: TextStyle(
-                                                        color:
-                                                            tahapan.status ==
-                                                                StatusTahapan
-                                                                    .selesai
-                                                            ? Colors.white
-                                                            : tahapan.isAktif
-                                                            ? Colors.white
-                                                            : Colors
-                                                                  .grey
-                                                                  .shade600,
+                                                          ? 'Menunggu'
+                                                          : 'Proses',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        fontSize: 11.5,
-                                                        letterSpacing: 0.2,
+                                                        fontSize: 12.5,
+                                                        letterSpacing: 0.3,
                                                       ),
                                                     ),
                                                   ),
                                                   if (isExpandable)
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            left: 8,
-                                                          ),
-                                                      child: Icon(
-                                                        isExpanded
-                                                            ? Icons.expand_less
-                                                            : Icons.expand_more,
-                                                        color: Colors
-                                                            .grey
-                                                            .shade400,
-                                                        size: 22,
-                                                      ),
+                                                    Icon(
+                                                      isExpanded
+                                                          ? Icons.expand_less
+                                                          : Icons.expand_more,
+                                                      color:
+                                                          Colors.blue.shade300,
                                                     ),
                                                 ],
                                               ),
@@ -1157,25 +1182,120 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                 bottom: 12,
                                                 top: 0,
                                               ),
-                                              padding: const EdgeInsets.all(12),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 18,
+                                                    vertical: 18,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
                                                 borderRadius:
-                                                    BorderRadius.circular(9),
+                                                    BorderRadius.circular(16),
                                                 border: Border.all(
-                                                  color: Colors.grey.shade100,
-                                                  width: 1,
+                                                  color: Colors.blue.shade100,
+                                                  width: 1.2,
                                                 ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.blue.shade100
+                                                        .withOpacity(0.08),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
                                               ),
-                                              child:
-                                                  tahapan.isAktif && canModify
-                                                  ? _buildCurrentStageForm(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.stretch,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Detail ${tahapan.nama}',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          fontSize: 15.5,
+                                                          color: Colors
+                                                              .blue
+                                                              .shade700,
+                                                        ),
+                                                      ),
+                                                      const Spacer(),
+                                                      if (!tahapan.isAktif &&
+                                                          canModify)
+                                                        OutlinedButton.icon(
+                                                          icon: const Icon(
+                                                            Icons.edit,
+                                                            size: 18,
+                                                          ),
+                                                          label: const Text(
+                                                            'Edit',
+                                                          ),
+                                                          style: OutlinedButton.styleFrom(
+                                                            foregroundColor:
+                                                                Colors
+                                                                    .blue
+                                                                    .shade700,
+                                                            side: BorderSide(
+                                                              color: Colors
+                                                                  .blue
+                                                                  .shade200,
+                                                            ),
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal:
+                                                                      14,
+                                                                  vertical: 8,
+                                                                ),
+                                                            textStyle:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          onPressed: () {
+                                                            setState(() {
+                                                              _expandedEditIndex =
+                                                                  index;
+                                                            });
+                                                          },
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 14),
+                                                  // Jika tahapan aktif dan data kosong, langsung tampilkan form input
+                                                  if (tahapan.isAktif &&
+                                                      (tahapan.formData ==
+                                                              null ||
+                                                          tahapan
+                                                              .formData!
+                                                              .isEmpty))
+                                                    _buildCurrentStageForm(
                                                       permohonan,
                                                       tahapan,
                                                     )
-                                                  : _buildTahapanFormSummary(
+                                                  else if (isEditMode &&
+                                                      !tahapan.isAktif)
+                                                    // Form edit tahapan lain (selain aktif)
+                                                    _buildCurrentStageForm(
+                                                      permohonan,
+                                                      tahapan,
+                                                    )
+                                                  else
+                                                    // Summary tahapan
+                                                    _buildTahapanFormSummary(
                                                       tahapan,
                                                     ),
+                                                ],
+                                              ),
                                             ),
                                         ],
                                       ),

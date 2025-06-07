@@ -146,3 +146,27 @@ class PermohonanModel extends Equatable {
     return "Proses"; // Fallback jika status 'proses' tapi tidak ada tahap aktif
   }
 }
+
+extension JenisPermohonanExt on JenisPermohonan {
+  String get label {
+    switch (this) {
+      case JenisPermohonan.pasangBaru:
+        return 'Pasang Baru (PB)';
+      case JenisPermohonan.perubahanDaya:
+        return 'Perubahan Daya (PD)';
+    }
+  }
+}
+
+extension PrioritasExt on Prioritas {
+  String get label {
+    switch (this) {
+      case Prioritas.rendah:
+        return 'Rendah';
+      case Prioritas.sedang:
+        return 'Sedang';
+      case Prioritas.tinggi:
+        return 'Tinggi';
+    }
+  }
+}

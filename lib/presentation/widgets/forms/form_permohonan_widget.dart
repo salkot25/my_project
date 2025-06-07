@@ -49,6 +49,7 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
             ?.toString()
             .split('.')
             .last, // Simpan sebagai string
+        'daya': _dayaController.text, // <-- pastikan daya selalu dikirim
         'catatan': _catatanController.text,
       };
       widget.onSubmit(formData);
@@ -70,11 +71,7 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
             items: JenisPermohonan.values.map((JenisPermohonan value) {
               return DropdownMenuItem<JenisPermohonan>(
                 value: value,
-                child: Text(
-                  value == JenisPermohonan.pasangBaru
-                      ? 'Pasang Baru'
-                      : 'Perubahan Daya',
-                ),
+                child: Text(value.label),
               );
             }).toList(),
             onChanged: (JenisPermohonan? newValue) {
@@ -131,7 +128,7 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
             items: Prioritas.values.map((Prioritas value) {
               return DropdownMenuItem<Prioritas>(
                 value: value,
-                child: Text(value.toString().split('.').last.capitalize()),
+                child: Text(value.label),
               );
             }).toList(),
             onChanged: (Prioritas? newValue) {
@@ -180,41 +177,45 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.grey.shade600,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+                  child: const Text('Batal'),
                 ),
-                child: const Text('Batal'),
               ),
               const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade400,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade400,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    elevation: 0,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  elevation: 0,
+                  child: const Text('Simpan & Lanjutkan'),
                 ),
-                child: const Text('Simpan & Lanjutkan'),
               ),
             ],
           ),

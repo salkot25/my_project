@@ -99,9 +99,22 @@ class _FormRabWidgetState extends State<FormRabWidget> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _ukuranTrafoController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Ukuran Trafo (kVA)',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(
+                Icons.electrical_services,
+                color: Colors.blue.shade400,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             keyboardType: TextInputType.number,
             validator: (value) => value == null || value.isEmpty
@@ -111,9 +124,19 @@ class _FormRabWidgetState extends State<FormRabWidget> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _jumlahTiangController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Jumlah Tiang',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.account_tree, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             keyboardType: TextInputType.number,
             validator: (value) => value == null || value.isEmpty
@@ -123,9 +146,19 @@ class _FormRabWidgetState extends State<FormRabWidget> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _catatanController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan RAB',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.notes, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             maxLines: 3,
           ),
@@ -133,6 +166,22 @@ class _FormRabWidgetState extends State<FormRabWidget> {
           Center(
             child: ElevatedButton(
               onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                elevation: 0,
+              ),
               child: const Text('Simpan & Lanjutkan'),
             ),
           ),

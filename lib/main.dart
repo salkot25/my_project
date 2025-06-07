@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app.dart'; // Pastikan ini mengarah ke file app.dart yang benar
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,9 @@ Future<void> main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvYnlwZnN0Zmthc2xrY252cGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNTc2OTEsImV4cCI6MjA2NDczMzY5MX0.sPN80Hn0Iv51TDwZqEcvMSd2zLoCNZHlpb6vMpLqwl8', // Ganti dengan Anon Key Supabase Anda
   );
+
+  // Inisialisasi locale tanggal Indonesia
+  await initializeDateFormatting('id_ID', null);
 
   runApp(const MyApp());
 }

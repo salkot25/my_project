@@ -3,6 +3,21 @@ import 'package:intl/intl.dart';
 
 enum HasilSurvey { tanpaPerluasan, perluasanTrafo, perluasanJtm, perluasanJtr }
 
+extension HasilSurveyExt on HasilSurvey {
+  String get label {
+    switch (this) {
+      case HasilSurvey.tanpaPerluasan:
+        return 'Tanpa Perluasan';
+      case HasilSurvey.perluasanTrafo:
+        return 'Perluasan Trafo';
+      case HasilSurvey.perluasanJtm:
+        return 'Perluasan JTM';
+      case HasilSurvey.perluasanJtr:
+        return 'Perluasan JTR';
+    }
+  }
+}
+
 class FormSurveyWidget extends StatefulWidget {
   final Function(Map<String, dynamic> formData) onSubmit;
   final Map<String, dynamic>? initialData; // Untuk pre-fill jika ada
@@ -78,10 +93,21 @@ class _FormSurveyWidgetState extends State<FormSurveyWidget> {
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Tanggal Survey',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.event, color: Colors.blue.shade400),
               hintText: _selectedDate == null
                   ? 'Pilih Tanggal'
-                  : DateFormat('dd MMM yyyy').format(_selectedDate!),
+                  : DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDate!),
               suffixIcon: const Icon(Icons.calendar_today),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             readOnly: true,
             onTap: () => _selectDate(context),
@@ -95,30 +121,44 @@ class _FormSurveyWidgetState extends State<FormSurveyWidget> {
             items: HasilSurvey.values.map((HasilSurvey value) {
               return DropdownMenuItem<HasilSurvey>(
                 value: value,
-                child: Text(
-                  value
-                      .toString()
-                      .split('.')
-                      .last
-                      .replaceAllMapped(
-                        RegExp(r'([A-Z])'),
-                        (match) => ' ${match.group(1)}',
-                      )
-                      .trim(),
-                ),
+                child: Text(value.label),
               );
             }).toList(),
             onChanged: (HasilSurvey? newValue) =>
                 setState(() => _selectedHasilSurvey = newValue),
             validator: (value) =>
                 value == null ? 'Hasil survey harus dipilih' : null,
+            decoration: InputDecoration(
+              labelText: 'Hasil Survey',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.checklist, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _catatanController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan Survey',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.notes, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             maxLines: 3,
           ),
@@ -126,6 +166,22 @@ class _FormSurveyWidgetState extends State<FormSurveyWidget> {
           Center(
             child: ElevatedButton(
               onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                elevation: 0,
+              ),
               child: const Text('Simpan & Lanjutkan'),
             ),
           ),

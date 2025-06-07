@@ -67,10 +67,21 @@ class _FormMomWidgetState extends State<FormMomWidget> {
           TextFormField(
             decoration: InputDecoration(
               labelText: 'Tanggal MOM',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.event, color: Colors.blue.shade400),
               hintText: _selectedDate == null
                   ? 'Pilih Tanggal'
-                  : DateFormat('dd MMM yyyy').format(_selectedDate!),
+                  : DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDate!),
               suffixIcon: const Icon(Icons.calendar_today),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             readOnly: true,
             onTap: () => _selectDate(context),
@@ -80,9 +91,19 @@ class _FormMomWidgetState extends State<FormMomWidget> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _catatanController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan MOM',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.notes, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             maxLines: 3,
           ),
@@ -90,6 +111,22 @@ class _FormMomWidgetState extends State<FormMomWidget> {
           Center(
             child: ElevatedButton(
               onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                elevation: 0,
+              ),
               child: const Text('Simpan & Lanjutkan'),
             ),
           ),

@@ -173,8 +173,13 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
                       );
                       return;
                     }
+                    // Kirim seluruh data form ke Cubit
                     context.read<PermohonanCubit>().tambahPermohonanBaru(
                       namaController.text,
+                      prioritas: formData['prioritas'],
+                      jenisPermohonan: formData['jenis_permohonan'],
+                      daya: formData['daya'],
+                      catatanPermohonan: formData['catatan'],
                     );
                     Navigator.of(dialogContext).pop();
                   },

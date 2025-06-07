@@ -105,19 +105,24 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     }
   }
 
-  void tambahPermohonanBaru(String namaPelanggan) {
+  // Ubah: tambahPermohonanBaru menerima seluruh data form
+  void tambahPermohonanBaru(
+    String namaPelanggan, {
+    String? prioritas,
+    String? jenisPermohonan,
+    String? daya,
+    String? catatanPermohonan,
+  }) {
     print(
       'PermohonanCubit: tambahPermohonanBaru called for $namaPelanggan. Current state: $state',
     );
-    // Membuat ID unik sederhana untuk contoh (Supabase juga bisa generate UUID)
-    final newId =
-        "PERM_${DateTime.now().millisecondsSinceEpoch}"; // Contoh ID unik
+    final newId = "PERM_${DateTime.now().millisecondsSinceEpoch}";
     final permohonanBaru = PermohonanModel.baru(
       id: newId,
       namaPelanggan: namaPelanggan,
     );
 
-    // Simpan ke Supabase
+    // Gunakan logika mirip updatePermohonanDetailData
     _supabase
         .from('permohonan')
         .insert({
@@ -129,12 +134,13 @@ class PermohonanCubit extends Cubit<PermohonanState> {
               .toString()
               .split('.')
               .last,
-          'nama_tahapan_aktif_cache':
-              permohonanBaru.namaTahapanAktifCache, // Simpan cache awal
-          // prioritas, jenis_permohonan, daya, dan catatan_permohonan akan diisi di tahap pertama
+          'nama_tahapan_aktif_cache': permohonanBaru.namaTahapanAktifCache,
+          'prioritas': prioritas,
+          'jenis_permohonan': jenisPermohonan,
+          'daya': daya,
+          'catatan_permohonan': catatanPermohonan,
         })
         .then((_) {
-          // Simpan tahapan-tahapan awal
           final tahapanToInsert = permohonanBaru.daftarTahapan
               .asMap()
               .entries
@@ -153,7 +159,6 @@ class PermohonanCubit extends Cubit<PermohonanState> {
               .from('tahapan')
               .insert(tahapanToInsert)
               .then((_) {
-                // Muat ulang daftar setelah berhasil menambah
                 loadPermohonanList();
               })
               .catchError((e) {

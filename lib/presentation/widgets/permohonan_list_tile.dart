@@ -38,16 +38,7 @@ class PermohonanListTile extends StatelessWidget {
   }
 
   String _getPriorityText() {
-    switch (permohonan.prioritas) {
-      case Prioritas.tinggi:
-        return 'Tinggi';
-      case Prioritas.sedang:
-        return 'Sedang';
-      case Prioritas.rendah:
-        return 'Rendah';
-      default:
-        return '';
-    }
+    return permohonan.prioritas?.label ?? '';
   }
 
   String _getFormattedDate() {
@@ -280,10 +271,7 @@ class PermohonanListTile extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                permohonan.jenisPermohonan ==
-                                        JenisPermohonan.pasangBaru
-                                    ? 'Pasang Baru'
-                                    : 'Perubahan Daya',
+                                permohonan.jenisPermohonan?.label ?? '',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: Colors.purple.shade700,

@@ -62,43 +62,7 @@ class _FormKontrakRinciWidgetState extends State<FormKontrakRinciWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (widget.rabData != null && widget.rabData!.isNotEmpty) ...[
-            Text(
-              'Informasi dari RAB:',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 4),
-            if (widget.rabData!['ukuran_trafo'] != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text(
-                  'Ukuran Trafo: ${widget.rabData!['ukuran_trafo']} kVA',
-                ),
-              ),
-            if (widget.rabData!['jumlah_tiang'] != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text('Jumlah Tiang: ${widget.rabData!['jumlah_tiang']}'),
-              ),
-            if (widget.rabData!['catatan_rab'] != null &&
-                widget.rabData!['catatan_rab'].isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2.0),
-                child: Text('Catatan RAB: ${widget.rabData!['catatan_rab']}'),
-              ),
-            const Divider(height: 20, thickness: 1),
-          ],
-          Text(
-            'Input Data Kontrak Rinci',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
           const SizedBox(height: 12),
-          const Text(
-            'Pilih Vendor:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
           DropdownButtonFormField<Vendor>(
             value: _selectedVendor,
             hint: const Text('Pilih Vendor'),
@@ -111,13 +75,37 @@ class _FormKontrakRinciWidgetState extends State<FormKontrakRinciWidget> {
             onChanged: (Vendor? newValue) =>
                 setState(() => _selectedVendor = newValue),
             validator: (value) => value == null ? 'Vendor harus dipilih' : null,
+            decoration: InputDecoration(
+              labelText: 'Vendor',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.business, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _catatanController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan Kontrak Rinci',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.notes, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             maxLines: 3,
           ),
@@ -125,6 +113,22 @@ class _FormKontrakRinciWidgetState extends State<FormKontrakRinciWidget> {
           Center(
             child: ElevatedButton(
               onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                elevation: 0,
+              ),
               child: const Text('Simpan & Lanjutkan'),
             ),
           ),
