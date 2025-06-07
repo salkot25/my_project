@@ -33,6 +33,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text.trim(),
       );
       if (res.user != null && mounted) {
+        // Insert ke tabel profiles setelah sign up
+        final user = res.user!;
+        final email = user.email;
+        final id = user.id;
+        // Username bisa diambil dari email sebelum '@' jika tidak ada field username
+        final username = email?.split('@').first ?? '';
+        // Role default, misal 'PP' (ubah sesuai kebutuhan)
+        const defaultRole = 'PP';
+        await Supabase.instance.client.from('profiles').insert({
+          'id': id,
+          'email': email,
+          'username': username,
+          'role': defaultRole,
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth/auth_gate.dart'; // Untuk navigasi setelah logout
 import 'auth/change_password_screen.dart'; // Import layar ganti password
+import '../../data/models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,7 +14,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
-  Map<String, dynamic>? _profile;
+  UserProfileModel? _profile;
 
   @override
   void initState() {
@@ -50,12 +51,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .maybeSingle();
       if (mounted) {
         setState(() {
-          _profile = newProfile ?? {};
+          _profile = newProfile != null
+              ? UserProfileModel.fromMap(newProfile)
+              : null;
         });
       }
     } else if (mounted) {
       setState(() {
-        _profile = response;
+        _profile = UserProfileModel.fromMap(response);
       });
     }
   }
@@ -80,14 +83,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditProfileDialog() {
     final usernameController = TextEditingController(
-      text: _profile?['username'] ?? '',
+      text: _profile?.username ?? '',
     );
     final whatsappController = TextEditingController(
-      text: _profile?['whatsapp'] ?? '',
+      text: _profile?.whatsapp ?? '',
     );
-    final roleController = TextEditingController(text: _profile?['role'] ?? '');
+    final roleController = TextEditingController(text: _profile?.role ?? '');
     final avatarController = TextEditingController(
-      text: _profile?['avatar_url'] ?? '',
+      text: _profile?.avatarUrl ?? '',
     );
     showDialog(
       context: context,
@@ -115,8 +118,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: roleController,
+                DropdownButtonFormField<String>(
+                  value: allowedRoles.contains(roleController.text)
+                      ? roleController.text
+                      : null,
+                  items: allowedRoles
+                      .map(
+                        (role) =>
+                            DropdownMenuItem(value: role, child: Text(role)),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    roleController.text = value ?? '';
+                  },
                   decoration: const InputDecoration(
                     labelText: 'Role',
                     prefixIcon: Icon(Icons.work_outline_rounded),
@@ -165,6 +179,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String getRoleLabelLocal(String? role) {
+    return getRoleLabel(role);
+  }
+
   @override
   Widget build(BuildContext context) {
     final createdAt = _user?.createdAt != null
@@ -208,13 +226,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 64,
                     backgroundColor: Colors.grey.shade200,
                     backgroundImage:
-                        _profile?['avatar_url'] != null &&
-                            _profile!['avatar_url'] != ''
-                        ? NetworkImage(_profile!['avatar_url'])
+                        _profile?.avatarUrl != null && _profile!.avatarUrl != ''
+                        ? NetworkImage(_profile!.avatarUrl)
                         : null,
                     child:
-                        _profile?['avatar_url'] == null ||
-                            _profile!['avatar_url'] == ''
+                        _profile?.avatarUrl == null || _profile!.avatarUrl == ''
                         ? Icon(
                             Icons.person,
                             color: Colors.blueGrey.shade300,
@@ -246,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             // Nama dan email
             Text(
-              _profile?['username'] ?? '-',
+              _profile?.username ?? '-',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 26,
@@ -257,6 +273,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 6),
             Text(
               _user?.email ?? '-',
+              style: const TextStyle(fontSize: 16, color: Color(0xFF64748B)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _profile?.avatarUrl != null && _profile!.avatarUrl != ''
+                  ? _profile!.avatarUrl
+                  : '-',
               style: const TextStyle(fontSize: 16, color: Color(0xFF64748B)),
               textAlign: TextAlign.center,
             ),
@@ -285,13 +309,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _ProfileInfoTile(
                     icon: Icons.chat_bubble_outline,
                     label: 'WhatsApp Number',
-                    value: _profile?['whatsapp'] ?? '-',
+                    value: _profile?.whatsapp ?? '-',
                   ),
                   const SizedBox(height: 14),
                   _ProfileInfoTile(
                     icon: Icons.work_outline_rounded,
                     label: 'Role',
-                    value: _profile?['role'] ?? '-',
+                    value: getRoleLabelLocal(_profile?.role),
                   ),
                   const SizedBox(height: 14),
                   _ProfileInfoTile(

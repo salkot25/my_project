@@ -9,6 +9,7 @@ import '../presentation/screens/profile_screen.dart';
 import '../presentation/screens/auth/change_password_screen.dart';
 import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/settings_screen.dart';
+import '../presentation/screens/my_task_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -40,6 +41,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
       case '/settings':
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
+      case MyTaskScreen.routeName:
+        return MaterialPageRoute(builder: (_) => const MyTaskScreen());
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }
