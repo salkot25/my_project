@@ -180,6 +180,8 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
                       jenisPermohonan: formData['jenis_permohonan'],
                       daya: formData['daya'],
                       catatanPermohonan: formData['catatan'],
+                      alamat: formData['alamat'],
+                      waPelanggan: formData['wa_pelanggan'],
                     );
                     Navigator.of(dialogContext).pop();
                   },

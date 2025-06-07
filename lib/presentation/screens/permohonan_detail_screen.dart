@@ -62,14 +62,64 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
 
     switch (tahapanAktif.nama) {
       case "Permohonan":
+        // Saat edit manual, pastikan FormPermohonanWidget menerima data dari tahapan.formData jika ada
         return FormPermohonanWidget(
-          permohonan: permohonan,
+          permohonan: PermohonanModel(
+            id: permohonan.id,
+            namaPelanggan:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["nama_pelanggan"] != null
+                ? tahapanAktif.formData!["nama_pelanggan"]
+                : permohonan.namaPelanggan,
+            tanggalPengajuan: permohonan.tanggalPengajuan,
+            daftarTahapan: permohonan.daftarTahapan,
+            statusKeseluruhan: permohonan.statusKeseluruhan,
+            prioritas:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["prioritas"] != null
+                ? Prioritas.values.firstWhereOrNull(
+                    (e) => e.name == tahapanAktif.formData!["prioritas"],
+                  )
+                : permohonan.prioritas,
+            catatanPermohonan:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["catatan"] != null
+                ? tahapanAktif.formData!["catatan"]
+                : permohonan.catatanPermohonan,
+            jenisPermohonan:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["jenis_permohonan"] != null
+                ? JenisPermohonan.values.firstWhereOrNull(
+                    (e) => e.name == tahapanAktif.formData!["jenis_permohonan"],
+                  )
+                : permohonan.jenisPermohonan,
+            daya:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["daya"] != null
+                ? tahapanAktif.formData!["daya"]
+                : permohonan.daya,
+            namaTahapanAktifCache: permohonan.namaTahapanAktifCache,
+            alamat:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["alamat"] != null
+                ? tahapanAktif.formData!["alamat"]
+                : permohonan.alamat,
+            waPelanggan:
+                tahapanAktif.formData != null &&
+                    tahapanAktif.formData!["wa_pelanggan"] != null
+                ? tahapanAktif.formData!["wa_pelanggan"]
+                : permohonan.waPelanggan,
+          ),
           onSubmit: handleFormSubmit,
         );
       case "Survey Lokasi":
+        // Saat edit manual, pastikan FormSurveyWidget menerima initialData dari tahapan.formData jika ada
         return FormSurveyWidget(
           onSubmit: handleFormSubmit,
-          initialData: tahapanAktif.formData,
+          initialData:
+              tahapanAktif.formData != null && tahapanAktif.formData!.isNotEmpty
+              ? Map<String, dynamic>.from(tahapanAktif.formData!)
+              : tahapanAktif.formData,
         );
       case "MOM":
         return FormMomWidget(
@@ -127,6 +177,12 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
     );
     final TextEditingController dayaController = TextEditingController(
       text: permohonan.daya,
+    );
+    final TextEditingController alamatController = TextEditingController(
+      text: permohonan.alamat,
+    );
+    final TextEditingController waController = TextEditingController(
+      text: permohonan.waPelanggan,
     );
     Prioritas? selectedPrioritas = permohonan.prioritas;
     JenisPermohonan? selectedJenisPermohonan = permohonan.jenisPermohonan;
@@ -208,6 +264,33 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                         ),
                         maxLines: 3,
                       ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: alamatController,
+                        decoration: const InputDecoration(labelText: "Alamat"),
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Alamat tidak boleh kosong'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: waController,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: "No. WhatsApp Pelanggan",
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'No. WhatsApp harus diisi';
+                          }
+                          if (!RegExp(
+                            r'^(\+62|62|08)[0-9]{8,15} ',
+                          ).hasMatch(value)) {
+                            return 'Format WA tidak valid';
+                          }
+                          return null;
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -230,6 +313,8 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                             jenisPermohonan: selectedJenisPermohonan,
                             daya: dayaController.text,
                             catatanPermohonan: catatanController.text,
+                            alamat: alamatController.text,
+                            waPelanggan: waController.text,
                           );
                       Navigator.of(dialogContext).pop();
                     }
@@ -315,6 +400,14 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
     switch (tahapan.nama) {
       case "Permohonan":
         fields = {
+          if (data['nama_pelanggan'] != null &&
+              data['nama_pelanggan'].toString().isNotEmpty)
+            'nama_pelanggan': data['nama_pelanggan'],
+          if (data['alamat'] != null && data['alamat'].toString().isNotEmpty)
+            'alamat': data['alamat'],
+          if (data['wa_pelanggan'] != null &&
+              data['wa_pelanggan'].toString().isNotEmpty)
+            'wa_pelanggan': data['wa_pelanggan'],
           if (data['jenis_permohonan'] != null)
             'jenis_permohonan': data['jenis_permohonan'],
           if (data['daya'] != null) 'daya': data['daya'],
@@ -323,12 +416,18 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
             'catatan': data['catatan'],
         };
         icons = {
+          'nama_pelanggan': Icons.person,
+          'alamat': Icons.location_on,
+          'wa_pelanggan': Icons.phone,
           'jenis_permohonan': Icons.assignment,
           'daya': Icons.flash_on,
           'prioritas': Icons.flag,
           'catatan': Icons.sticky_note_2,
         };
         labels = {
+          'nama_pelanggan': 'Nama Pelanggan',
+          'alamat': 'Alamat',
+          'wa_pelanggan': 'No. WhatsApp',
           'jenis_permohonan': 'Jenis Permohonan',
           'daya': 'Daya',
           'prioritas': 'Prioritas',
@@ -339,6 +438,9 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
         fields = {
           if (data['tanggal_survey'] != null)
             'tanggal_survey': data['tanggal_survey'],
+          if (data['tag_lokasi'] != null &&
+              data['tag_lokasi'].toString().isNotEmpty)
+            'tag_lokasi': data['tag_lokasi'],
           if (data['hasil_survey'] != null)
             'hasil_survey': data['hasil_survey'],
           if (data['catatan_survey'] != null &&
@@ -347,11 +449,13 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
         };
         icons = {
           'tanggal_survey': Icons.event,
+          'tag_lokasi': Icons.location_on,
           'hasil_survey': Icons.checklist,
           'catatan_survey': Icons.sticky_note_2,
         };
         labels = {
           'tanggal_survey': 'Tanggal Survey',
+          'tag_lokasi': 'Tag Lokasi',
           'hasil_survey': 'Hasil Survey',
           'catatan_survey': 'Catatan',
         };
@@ -1169,64 +1273,107 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.stretch,
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Text(
-                                                    'Detail ${tahapan.nama}',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontSize: 15.5,
-                                                      color:
-                                                          Colors.blue.shade700,
-                                                    ),
-                                                  ),
-                                                  const Spacer(),
-                                                  if (!tahapan.isAktif &&
-                                                      canModify)
-                                                    OutlinedButton.icon(
-                                                      icon: const Icon(
-                                                        Icons.edit,
-                                                        size: 18,
-                                                      ),
-                                                      label: const Text('Edit'),
-                                                      style: OutlinedButton.styleFrom(
-                                                        foregroundColor: Colors
-                                                            .blue
-                                                            .shade700,
-                                                        side: BorderSide(
-                                                          color: Colors
-                                                              .blue
-                                                              .shade200,
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 14,
-                                                              vertical: 8,
-                                                            ),
-                                                        textStyle:
-                                                            const TextStyle(
+                                              if (!tahapan.isAktif && canModify)
+                                                Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            tahapan.formData?['user_update'] ??
+                                                                '-',
+                                                            style: TextStyle(
+                                                              fontSize: 13.5,
+                                                              color: Colors
+                                                                  .blueGrey
+                                                                  .shade700,
                                                               fontWeight:
                                                                   FontWeight
-                                                                      .w600,
+                                                                      .w700,
                                                             ),
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                        ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 2,
+                                                          ),
+                                                          Text(
+                                                            () {
+                                                              final raw = tahapan
+                                                                  .formData?['tanggal_update'];
+                                                              if (raw == null ||
+                                                                  raw
+                                                                      .toString()
+                                                                      .isEmpty) {
+                                                                return '-';
+                                                              }
+                                                              try {
+                                                                final dt =
+                                                                    DateTime.tryParse(
+                                                                      raw.toString(),
+                                                                    );
+                                                                if (dt !=
+                                                                    null) {
+                                                                  return DateFormat(
+                                                                    'dd MMM yyyy, HH:mm',
+                                                                    'id_ID',
+                                                                  ).format(dt);
+                                                                }
+                                                              } catch (_) {}
+                                                              return raw
+                                                                  .toString();
+                                                            }(),
+                                                            style: TextStyle(
+                                                              fontSize: 12.5,
+                                                              color: Colors
+                                                                  .blueGrey
+                                                                  .shade600,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ],
                                                       ),
-                                                      onPressed: () {
-                                                        setState(() {
-                                                          _expandedEditIndex =
-                                                              index;
-                                                        });
-                                                      },
                                                     ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 14),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            left: 8,
+                                                            top: 0,
+                                                          ),
+                                                      child: IconButton(
+                                                        icon: const Icon(
+                                                          Icons.edit,
+                                                          size: 20,
+                                                        ),
+                                                        color: Colors
+                                                            .blue
+                                                            .shade700,
+                                                        tooltip: 'Edit',
+                                                        constraints:
+                                                            const BoxConstraints(),
+                                                        padding:
+                                                            EdgeInsets.zero,
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            _expandedEditIndex =
+                                                                index;
+                                                          });
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               if (tahapan.isAktif &&
                                                   (tahapan.formData == null ||
                                                       tahapan
@@ -1240,7 +1387,21 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                   !tahapan.isAktif)
                                                 _buildCurrentStageForm(
                                                   permohonan,
-                                                  tahapan,
+                                                  tahapan.copyWith(
+                                                    formData:
+                                                        tahapan.formData !=
+                                                                null &&
+                                                            tahapan
+                                                                .formData!
+                                                                .isNotEmpty
+                                                        ? Map<
+                                                            String,
+                                                            dynamic
+                                                          >.from(
+                                                            tahapan.formData!,
+                                                          )
+                                                        : {},
+                                                  ),
                                                 )
                                               else
                                                 _buildTahapanFormSummary(

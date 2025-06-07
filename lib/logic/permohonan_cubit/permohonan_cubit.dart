@@ -112,6 +112,8 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     String? jenisPermohonan,
     String? daya,
     String? catatanPermohonan,
+    String? alamat,
+    String? waPelanggan, // Tambah parameter WA
   }) {
     print(
       'PermohonanCubit: tambahPermohonanBaru called for $namaPelanggan. Current state: $state',
@@ -120,9 +122,10 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     final permohonanBaru = PermohonanModel.baru(
       id: newId,
       namaPelanggan: namaPelanggan,
+      alamat: alamat,
+      waPelanggan: waPelanggan,
     );
 
-    // Gunakan logika mirip updatePermohonanDetailData
     _supabase
         .from('permohonan')
         .insert({
@@ -139,6 +142,8 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           'jenis_permohonan': jenisPermohonan,
           'daya': daya,
           'catatan_permohonan': catatanPermohonan,
+          'alamat': alamat,
+          'wa_pelanggan': waPelanggan, // Insert WA
         })
         .then((_) {
           final tahapanToInsert = permohonanBaru.daftarTahapan
@@ -178,9 +183,29 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     String idPermohonan,
     String namaTahapAktif,
     Map<String, dynamic> formData,
-  ) {
+  ) async {
+    // Otomatisasi pengisian user_update dan tanggal_update pada setiap submit form tahapan
+    final user = Supabase.instance.client.auth.currentUser;
+    String? username;
+    if (user != null) {
+      // Coba ambil username dari tabel profile
+      final profile = await Supabase.instance.client
+          .from('profile')
+          .select('username')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      username =
+          profile != null &&
+              profile['username'] != null &&
+              profile['username'].toString().isNotEmpty
+          ? profile['username'].toString()
+          : null;
+    }
+    formData['user_update'] = username ?? user?.email ?? 'User';
+    formData['tanggal_update'] = DateTime.now().toIso8601String();
+
     // 1. Update data form dan status tahap saat ini di tabel 'tahapan'
-    _supabase
+    await _supabase
         .from('tahapan')
         .update({
           'status': StatusTahapan.selesai.toString().split('.').last,
@@ -188,105 +213,41 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           'form_data': formData, // Simpan Map<String, dynamic> langsung
         })
         .eq('permohonan_id', idPermohonan)
-        .eq('nama', namaTahapAktif)
-        .then((_) {
-          // Jika tahap "Permohonan" yang diisi, update juga data di PermohonanModel
-          if (namaTahapAktif == "Permohonan") {
-            JenisPermohonan? jenisPermohonan;
-            Prioritas? prioritas;
-            try {
-              jenisPermohonan = formData['jenis_permohonan'] != null
-                  ? JenisPermohonan.values.firstWhere(
-                      (e) =>
-                          e.toString().split('.').last ==
-                          formData['jenis_permohonan'],
-                    )
-                  : null;
-              prioritas = formData['prioritas'] != null
-                  ? Prioritas.values.firstWhere(
-                      (e) =>
-                          e.toString().split('.').last == formData['prioritas'],
-                    )
-                  : null;
-            } catch (e) {
-              // handle error jika parsing enum gagal
-              // Anda bisa menambahkan logging atau emit error state di sini
-            }
-            _supabase
-                .from('permohonan')
-                .update({
-                  'jenis_permohonan': jenisPermohonan
-                      ?.toString()
-                      .split('.')
-                      .last,
-                  'daya':
-                      formData['daya'] as String?, // Ambil daya dari formData
-                  'prioritas': prioritas?.toString().split('.').last,
-                  'catatan_permohonan': formData['catatan'] as String?,
-                })
-                .eq('id', idPermohonan)
-                .catchError((e) {
-                  emit(
-                    PermohonanError(
-                      "Gagal mengupdate data permohonan awal: ${e.toString()}",
-                    ),
-                  );
-                });
-          }
-
-          // 2. Cari tahap berikutnya berdasarkan urutan
-          _supabase
-              .from('tahapan')
-              .select('urutan')
-              .eq('permohonan_id', idPermohonan)
-              .eq('nama', namaTahapAktif)
-              .single()
-              .then((currentTahapData) {
-                final currentUrutan = currentTahapData['urutan'] as int;
-                final nextUrutan = currentUrutan + 1;
-
-                // 3. Update status tahap berikutnya menjadi 'aktif' jika ada
-                if (nextUrutan < alurTahapanDefault.length) {
-                  _supabase
-                      .from('tahapan')
-                      .update({
-                        'status': StatusTahapan.aktif
-                            .toString()
-                            .split('.')
-                            .last,
-                      })
-                      .eq('permohonan_id', idPermohonan)
-                      .eq('urutan', nextUrutan)
-                      .then((_) {
-                        // 4. Update status keseluruhan di tabel 'permohonan'
-                        final nextTahapNama = alurTahapanDefault[nextUrutan];
-                        _updatePermohonanStatus(idPermohonan, nextTahapNama);
-                      })
-                      .catchError((e) {
-                        emit(
-                          PermohonanError(
-                            "Gagal mengaktifkan tahap berikutnya: ${e.toString()}",
-                          ),
-                        );
-                      });
-                } else {
-                  // Jika tidak ada tahap berikutnya, tandai permohonan selesai
-                  _updatePermohonanStatus(idPermohonan, "Selesai");
-                }
-              })
-              .catchError((e) {
-                emit(
-                  PermohonanError(
-                    "Gagal mencari urutan tahap: ${e.toString()}",
-                  ),
-                );
-              });
-        })
-        .catchError((e) {
-          emit(
-            PermohonanError("Gagal menyimpan data form tahap: ${e.toString()}"),
-          );
-        });
+        .eq('nama', namaTahapAktif);
+    // Jika tahap "Permohonan" yang diisi, update juga data di PermohonanModel
+    if (namaTahapAktif == "Permohonan") {
+      JenisPermohonan? jenisPermohonan;
+      Prioritas? prioritas;
+      try {
+        jenisPermohonan = formData['jenis_permohonan'] != null
+            ? JenisPermohonan.values.firstWhere(
+                (e) =>
+                    e.toString().split('.').last ==
+                    formData['jenis_permohonan'],
+              )
+            : null;
+        prioritas = formData['prioritas'] != null
+            ? Prioritas.values.firstWhere(
+                (e) => e.toString().split('.').last == formData['prioritas'],
+              )
+            : null;
+        await _supabase
+            .from('permohonan')
+            .update({
+              'jenis_permohonan': jenisPermohonan?.toString().split('.').last,
+              'prioritas': prioritas?.toString().split('.').last,
+              'daya': formData['daya'],
+              'catatan_permohonan': formData['catatan'],
+              'alamat': formData['alamat'],
+              'wa_pelanggan': formData['wa_pelanggan'],
+            })
+            .eq('id', idPermohonan);
+      } catch (_) {}
+    }
+    // Refresh detail
+    loadPermohonanDetail(idPermohonan);
+    // Otomatis aktifkan tahap berikutnya setelah simpan form
+    advanceToNextStage(idPermohonan, namaTahapAktif);
   }
 
   void advanceToNextStage(String idPermohonan, String namaTahapSaatIni) {
@@ -394,8 +355,10 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     JenisPermohonan? jenisPermohonan,
     String? daya,
     String? catatanPermohonan,
+    String? alamat,
+    String? waPelanggan, // Tambah parameter WA
   }) {
-    emit(PermohonanLoading()); // Atau state spesifik untuk update
+    emit(PermohonanLoading());
     _supabase
         .from('permohonan')
         .update({
@@ -404,12 +367,12 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           'jenis_permohonan': jenisPermohonan?.toString().split('.').last,
           'daya': daya,
           'catatan_permohonan': catatanPermohonan,
+          'alamat': alamat,
+          'wa_pelanggan': waPelanggan, // Update WA
         })
         .eq('id', idPermohonan)
         .then((_) {
-          loadPermohonanDetail(idPermohonan); // Muat ulang detail
-          // Pertimbangkan untuk memuat ulang list juga jika nama pelanggan berubah dan ditampilkan di list
-          // loadPermohonanList();
+          loadPermohonanDetail(idPermohonan);
         })
         .catchError((e) {
           emit(

@@ -16,6 +16,7 @@ dependencies:
   intl: ^0.20.2
   timelines: ^0.1.0
   timeline_tile: ^2.0.0
+  geolocator: ^14.0.1
 
 dev_dependencies:
   flutter_test:

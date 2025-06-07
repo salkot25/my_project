@@ -19,6 +19,8 @@ class PermohonanModel extends Equatable {
   final JenisPermohonan? jenisPermohonan;
   final String? daya; // Misal: "1300 VA", "2200 VA"
   final String? namaTahapanAktifCache; // Kolom cache baru
+  final String? alamat; // Tambah field alamat
+  final String? waPelanggan; // Tambah field WA
 
   const PermohonanModel({
     required this.id,
@@ -31,6 +33,8 @@ class PermohonanModel extends Equatable {
     this.jenisPermohonan,
     this.daya,
     this.namaTahapanAktifCache,
+    this.alamat,
+    this.waPelanggan, // Tambah ke konstruktor
   });
 
   factory PermohonanModel.fromMap(
@@ -58,12 +62,16 @@ class PermohonanModel extends Equatable {
           : null,
       daya: map['daya'] as String?,
       namaTahapanAktifCache: map['nama_tahapan_aktif_cache'] as String?,
+      alamat: map['alamat'] as String?, // Mapping alamat
+      waPelanggan: map['wa_pelanggan'] as String?, // Mapping WA
     );
   }
 
   factory PermohonanModel.baru({
     required String id,
     required String namaPelanggan,
+    String? alamat, // Tambah ke factory baru
+    String? waPelanggan, // Tambah ke factory baru
   }) {
     List<TahapanModel> tahapanAwal = alurTahapanDefault
         .map((namaTahap) => TahapanModel(nama: namaTahap))
@@ -79,11 +87,9 @@ class PermohonanModel extends Equatable {
       namaPelanggan: namaPelanggan,
       tanggalPengajuan: DateTime.now(),
       daftarTahapan: tahapanAwal,
-      // prioritas dan catatanPermohonan bisa diisi dari form awal
-      // atau dibiarkan null dan diisi pada tahap pertama
-      // jenisPermohonan dan daya juga bisa diisi dari form awal
-      // atau dibiarkan null dan diisi pada tahap pertama
       namaTahapanAktifCache: initialNamaTahapanAktifCache,
+      alamat: alamat, // Set alamat jika ada
+      waPelanggan: waPelanggan, // Set WA jika ada
     );
   }
 
@@ -98,6 +104,8 @@ class PermohonanModel extends Equatable {
     JenisPermohonan? jenisPermohonan,
     String? daya,
     String? namaTahapanAktifCache,
+    String? alamat, // Tambah ke copyWith
+    String? waPelanggan, // Tambah ke copyWith
   }) {
     return PermohonanModel(
       id: id ?? this.id,
@@ -111,6 +119,8 @@ class PermohonanModel extends Equatable {
       daya: daya ?? this.daya,
       namaTahapanAktifCache:
           namaTahapanAktifCache ?? this.namaTahapanAktifCache,
+      alamat: alamat ?? this.alamat, // Copy alamat
+      waPelanggan: waPelanggan ?? this.waPelanggan, // Copy WA
     );
   }
 
@@ -126,6 +136,8 @@ class PermohonanModel extends Equatable {
     jenisPermohonan,
     daya,
     namaTahapanAktifCache,
+    alamat, // Tambah ke props
+    waPelanggan, // Tambah ke props
   ];
 
   String get tahapanAktif {
