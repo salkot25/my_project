@@ -6,6 +6,7 @@ import '../widgets/app_drawer.dart';
 import '../../app.dart';
 import './permohonan_detail_screen.dart';
 import '../../data/models/permohonan_model.dart';
+import '../widgets/forms/form_permohonan_widget.dart';
 
 class PermohonanListScreen extends StatefulWidget {
   const PermohonanListScreen({super.key});
@@ -59,6 +60,13 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
   }
 
   void _showAddPermohonanDialog(BuildContext context) {
+    final PermohonanModel dummyPermohonan = PermohonanModel(
+      id: '',
+      namaPelanggan: '',
+      tanggalPengajuan: DateTime.now(),
+      statusKeseluruhan: StatusPermohonan.proses,
+      daftarTahapan: const [],
+    );
     final TextEditingController namaController = TextEditingController();
     showDialog(
       context: context,
@@ -69,105 +77,111 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
             borderRadius: BorderRadius.circular(20),
           ),
           title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade300, Colors.blue.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.shade100.withOpacity(0.13),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.add_circle_outline,
+                        color: Color(0xFF2563EB),
+                        size: 28,
+                      ),
+                    ),
                   ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tambah Permohonan Baru',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.grey.shade800,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Isikan semua data permohonan baru dengan lengkap.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Tambah Permohonan Baru',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.grey.shade800,
-                ),
-              ),
+              Divider(thickness: 1, color: Color(0xFFF1F5F9)),
             ],
           ),
-          content: TextField(
-            controller: namaController,
-            decoration: InputDecoration(
-              hintText: "Nama Pelanggan",
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              prefixIcon: Icon(
-                Icons.person_outline,
-                color: Colors.blue.shade400,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
-              ),
-            ),
-            autofocus: true,
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Batal',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: namaController,
+                  decoration: InputDecoration(
+                    labelText: "Nama Pelanggan",
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Colors.blue.shade400,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  autofocus: true,
                 ),
-                child: const Text(
-                  'Tambah',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: () {
-                  if (namaController.text.isNotEmpty) {
+                const SizedBox(height: 18),
+                FormPermohonanWidget(
+                  permohonan: dummyPermohonan,
+                  onSubmit: (formData) {
+                    if (namaController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nama pelanggan wajib diisi.'),
+                        ),
+                      );
+                      return;
+                    }
                     context.read<PermohonanCubit>().tambahPermohonanBaru(
                       namaController.text,
                     );
                     Navigator.of(dialogContext).pop();
-                  }
-                },
-              ),
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -216,11 +230,6 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
                   .length;
               final proses = allList
                   .where((p) => p.statusKeseluruhan == StatusPermohonan.proses)
-                  .length;
-              final dibatalkan = allList
-                  .where(
-                    (p) => p.statusKeseluruhan == StatusPermohonan.dibatalkan,
-                  )
                   .length;
 
               if (total == 0) {

@@ -62,16 +62,8 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'Detail Pelanggan: ${widget.permohonan.namaPelanggan}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          Text('ID Permohonan: ${widget.permohonan.id}'),
-          const SizedBox(height: 20),
-          const Text(
-            'Jenis Permohonan:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          // Hapus tampilan detail pelanggan dan ID Permohonan (read only)
+          // Jenis Permohonan
           DropdownButtonFormField<JenisPermohonan>(
             value: _selectedJenisPermohonan,
             hint: const Text('Pilih Jenis Permohonan'),
@@ -92,22 +84,47 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
             },
             validator: (value) =>
                 value == null ? 'Jenis Permohonan harus dipilih' : null,
+            decoration: InputDecoration(
+              labelText: 'Jenis Permohonan',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(
+                Icons.electric_bolt,
+                color: Colors.blue.shade400,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
+          // Daya
           TextFormField(
             controller: _dayaController,
-            decoration: const InputDecoration(
-              labelText: 'Daya (Contoh: 1300 VA)',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'Kebutuhan Daya (VA)',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.flash_on, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             validator: (value) =>
                 value == null || value.isEmpty ? 'Daya harus diisi' : null,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Prioritas:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          // Prioritas
           DropdownButtonFormField<Prioritas>(
             value: _selectedPrioritas,
             hint: const Text('Pilih Prioritas'),
@@ -124,22 +141,82 @@ class _FormPermohonanWidgetState extends State<FormPermohonanWidget> {
             },
             validator: (value) =>
                 value == null ? 'Prioritas harus dipilih' : null,
+            decoration: InputDecoration(
+              labelText: 'Prioritas',
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.flag, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
+          // Catatan Permohonan
           TextFormField(
             controller: _catatanController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Catatan Permohonan',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: Icon(Icons.notes, color: Colors.blue.shade400),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+              ),
             ),
             maxLines: 3,
           ),
           const SizedBox(height: 24),
-          Center(
-            child: ElevatedButton(
-              onPressed: _submitForm,
-              child: const Text('Simpan & Lanjutkan'),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey.shade600,
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                child: const Text('Batal'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade400,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Simpan & Lanjutkan'),
+              ),
+            ],
           ),
         ],
       ),

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../../data/models/permohonan_model.dart';
 import '../../data/models/tahapan_model.dart';
-import '../widgets/tahapan_list_item.dart';
 import '../widgets/forms/form_permohonan_widget.dart'; // Import form
 import '../widgets/forms/form_survey_widget.dart'; // Import form
 import '../widgets/forms/form_mom_widget.dart'; // Import form
@@ -308,82 +307,218 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
 
   Widget _buildTahapanFormSummary(TahapanModel tahapan) {
     final data = tahapan.formData ?? {};
+    final Map<String, dynamic> fields;
+    final Map<String, IconData> icons;
+    final Map<String, String> labels;
     switch (tahapan.nama) {
       case "Permohonan":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['jenis_permohonan'] != null)
-              Text('Jenis Permohonan: ${data['jenis_permohonan']}'),
-            if (data['daya'] != null) Text('Daya: ${data['daya']}'),
-            if (data['prioritas'] != null)
-              Text('Prioritas: ${data['prioritas']}'),
-            if (data['catatan'] != null &&
-                data['catatan'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan']}'),
-          ],
-        );
+        fields = {
+          if (data['jenis_permohonan'] != null)
+            'jenis_permohonan': data['jenis_permohonan'],
+          if (data['daya'] != null) 'daya': data['daya'],
+          if (data['prioritas'] != null) 'prioritas': data['prioritas'],
+          if (data['catatan'] != null && data['catatan'].toString().isNotEmpty)
+            'catatan': data['catatan'],
+        };
+        icons = {
+          'jenis_permohonan': Icons.assignment,
+          'daya': Icons.flash_on,
+          'prioritas': Icons.flag,
+          'catatan': Icons.sticky_note_2,
+        };
+        labels = {
+          'jenis_permohonan': 'Jenis Permohonan',
+          'daya': 'Daya',
+          'prioritas': 'Prioritas',
+          'catatan': 'Catatan',
+        };
+        break;
       case "Survey Lokasi":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['tanggal_survey'] != null)
-              Text('Tanggal Survey: ${data['tanggal_survey']}'),
-            if (data['hasil_survey'] != null)
-              Text('Hasil Survey: ${data['hasil_survey']}'),
-            if (data['catatan_survey'] != null &&
-                data['catatan_survey'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan_survey']}'),
-          ],
-        );
+        fields = {
+          if (data['tanggal_survey'] != null)
+            'tanggal_survey': data['tanggal_survey'],
+          if (data['hasil_survey'] != null)
+            'hasil_survey': data['hasil_survey'],
+          if (data['catatan_survey'] != null &&
+              data['catatan_survey'].toString().isNotEmpty)
+            'catatan_survey': data['catatan_survey'],
+        };
+        icons = {
+          'tanggal_survey': Icons.event,
+          'hasil_survey': Icons.checklist,
+          'catatan_survey': Icons.sticky_note_2,
+        };
+        labels = {
+          'tanggal_survey': 'Tanggal Survey',
+          'hasil_survey': 'Hasil Survey',
+          'catatan_survey': 'Catatan',
+        };
+        break;
       case "MOM":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['tanggal_mom'] != null)
-              Text('Tanggal MOM: ${data['tanggal_mom']}'),
-            if (data['catatan_mom'] != null &&
-                data['catatan_mom'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan_mom']}'),
-          ],
-        );
+        fields = {
+          if (data['tanggal_mom'] != null) 'tanggal_mom': data['tanggal_mom'],
+          if (data['catatan_mom'] != null &&
+              data['catatan_mom'].toString().isNotEmpty)
+            'catatan_mom': data['catatan_mom'],
+        };
+        icons = {
+          'tanggal_mom': Icons.event_note,
+          'catatan_mom': Icons.sticky_note_2,
+        };
+        labels = {'tanggal_mom': 'Tanggal MOM', 'catatan_mom': 'Catatan'};
+        break;
       case "RAB":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['ukuran_trafo'] != null)
-              Text('Ukuran Trafo: ${data['ukuran_trafo']}'),
-            if (data['jumlah_tiang'] != null)
-              Text('Jumlah Tiang: ${data['jumlah_tiang']}'),
-            if (data['catatan_rab'] != null &&
-                data['catatan_rab'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan_rab']}'),
-          ],
-        );
+        fields = {
+          if (data['ukuran_trafo'] != null)
+            'ukuran_trafo': data['ukuran_trafo'],
+          if (data['jumlah_tiang'] != null)
+            'jumlah_tiang': data['jumlah_tiang'],
+          if (data['catatan_rab'] != null &&
+              data['catatan_rab'].toString().isNotEmpty)
+            'catatan_rab': data['catatan_rab'],
+        };
+        icons = {
+          'ukuran_trafo': Icons.electrical_services,
+          'jumlah_tiang': Icons.account_tree,
+          'catatan_rab': Icons.sticky_note_2,
+        };
+        labels = {
+          'ukuran_trafo': 'Ukuran Trafo',
+          'jumlah_tiang': 'Jumlah Tiang',
+          'catatan_rab': 'Catatan',
+        };
+        break;
       case "Kontrak Rinci":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['vendor'] != null) Text('Vendor: ${data['vendor']}'),
-            if (data['catatan_kontrak'] != null &&
-                data['catatan_kontrak'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan_kontrak']}'),
-          ],
-        );
+        fields = {
+          if (data['vendor'] != null) 'vendor': data['vendor'],
+          if (data['catatan_kontrak'] != null &&
+              data['catatan_kontrak'].toString().isNotEmpty)
+            'catatan_kontrak': data['catatan_kontrak'],
+        };
+        icons = {
+          'vendor': Icons.business,
+          'catatan_kontrak': Icons.sticky_note_2,
+        };
+        labels = {'vendor': 'Vendor', 'catatan_kontrak': 'Catatan'};
+        break;
       case "Pasang APP":
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data['tanggal_pasang'] != null)
-              Text('Tanggal Pasang: ${data['tanggal_pasang']}'),
-            if (data['catatan_pasang'] != null &&
-                data['catatan_pasang'].toString().isNotEmpty)
-              Text('Catatan: ${data['catatan_pasang']}'),
-          ],
-        );
+        fields = {
+          if (data['tanggal_pasang'] != null)
+            'tanggal_pasang': data['tanggal_pasang'],
+          if (data['catatan_pasang'] != null &&
+              data['catatan_pasang'].toString().isNotEmpty)
+            'catatan_pasang': data['catatan_pasang'],
+        };
+        icons = {
+          'tanggal_pasang': Icons.event_available,
+          'catatan_pasang': Icons.sticky_note_2,
+        };
+        labels = {
+          'tanggal_pasang': 'Tanggal Pasang',
+          'catatan_pasang': 'Catatan',
+        };
+        break;
       default:
-        return const Text('Tidak ada data.');
+        fields = {};
+        icons = {};
+        labels = {};
     }
+    if (fields.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.shade100, width: 1.2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue.shade200, size: 38),
+            const SizedBox(height: 10),
+            Text(
+              'Belum ada data untuk tahap ini',
+              style: TextStyle(
+                color: Colors.blue.shade400,
+                fontWeight: FontWeight.w600,
+                fontSize: 15.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Silakan lengkapi form pada tahap ini.',
+              style: TextStyle(
+                color: Colors.blueGrey.shade300,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w400,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      children: fields.entries.map((entry) {
+        final key = entry.key;
+        final value = entry.value;
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 7),
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 13),
+          decoration: BoxDecoration(
+            color: Colors.blueGrey.shade50,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.blueGrey.shade100, width: 1.1),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(7),
+                child: Icon(
+                  icons[key] ?? Icons.info_outline,
+                  color: Colors.blue.shade600,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      labels[key] ?? key,
+                      style: TextStyle(
+                        color: Colors.blueGrey.shade400,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value.toString(),
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 
   @override
@@ -408,13 +543,6 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           } else if (state is PermohonanDetailLoaded) {
             final permohonan = state.permohonan;
-            final tahapanAktif = permohonan.daftarTahapan.firstWhere(
-              (t) => t.isAktif,
-              orElse: () => const TahapanModel(
-                nama: '',
-                status: StatusTahapan.menunggu,
-              ), // Fallback
-            );
 
             final bool canModify =
                 permohonan.statusKeseluruhan == StatusPermohonan.proses;
