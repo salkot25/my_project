@@ -4,6 +4,8 @@ import '../../data/models/user_model.dart';
 import '../../data/models/permohonan_model.dart';
 import '../../core/constants/app_stages.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/vendor_laporan_jaringan_form.dart';
+import '../widgets/vendor_laporan_jaringan_history.dart';
 
 class MyTaskScreen extends StatefulWidget {
   const MyTaskScreen({super.key});
@@ -19,6 +21,10 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
   List<PermohonanModel> _permohonanList = [];
   bool _loading = true;
 
+  // Tambahkan variabel untuk laporan vendor
+  List<Map<String, dynamic>> _vendorReports = [];
+  bool _loadingReports = false;
+
   // Tahapan yang relevan untuk setiap role
   static const Map<String, List<String>> roleStages = {
     'PP': ['Permohonan', 'MOM', 'Kontrak Rinci'],
@@ -33,6 +39,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
   void initState() {
     super.initState();
     _loadProfileAndTasks();
+    _loadVendorReports();
   }
 
   Future<void> _loadProfileAndTasks() async {
@@ -63,6 +70,23 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
     });
   }
 
+  // Method untuk memuat laporan vendor
+  Future<void> _loadVendorReports() async {
+    if (_profile?.role != 'Vendor') return;
+    setState(() => _loadingReports = true);
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final reports = await Supabase.instance.client
+        .from('vendor_laporan_jaringan')
+        .select()
+        .eq('user_id', user.id)
+        .order('tanggal', ascending: false);
+    setState(() {
+      _vendorReports = List<Map<String, dynamic>>.from(reports);
+      _loadingReports = false;
+    });
+  }
+
   List<String> getAvailableStages() {
     if (_profile == null) return [];
     final role = _profile!.role;
@@ -87,9 +111,55 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
         .toList();
   }
 
-  Widget buildVendorTaskLaporan(List<PermohonanModel> list) {
+  // Fungsi untuk mengambil laporan vendor berdasarkan permohonan_id
+  Future<List<Map<String, dynamic>>> _fetchLaporanByPermohonan(
+    String permohonanId,
+  ) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return [];
+    final reports = await Supabase.instance.client
+        .from('vendor_laporan_jaringan')
+        .select()
+        .eq('user_id', user.id)
+        .eq('permohonan_id', permohonanId)
+        .order('tanggal', ascending: false);
+    return List<Map<String, dynamic>>.from(reports);
+  }
+
+  // Dialog untuk menampilkan daftar laporan vendor per permohonan
+  void _showLaporanListDialog(
+    BuildContext parentContext,
+    PermohonanModel permohonan,
+  ) async {
+    showDialog(
+      context: parentContext,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: VendorLaporanJaringanHistory(
+              permohonanId: permohonan.id,
+              namaPelanggan: permohonan.namaPelanggan,
+              onLaporanAdded: () async {
+                await _loadVendorReports();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildVendorTaskLaporan(
+    List<PermohonanModel> list, {
+    bool hanyaSelesai = false,
+  }) {
     final jaringanTasks = list
         .where((p) => p.tahapanAktif == 'Jaringan')
+        .where((p) => !hanyaSelesai || (p.statusKeseluruhan.name == 'selesai'))
         .toList();
     if (jaringanTasks.isEmpty) {
       return Center(
@@ -103,7 +173,9 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Tidak ada pekerjaan jaringan yang perlu dilaporkan.',
+              hanyaSelesai
+                  ? 'Tidak ada pekerjaan jaringan yang sudah selesai.'
+                  : 'Tidak ada pekerjaan jaringan yang perlu dilaporkan.',
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
@@ -115,6 +187,40 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
       separatorBuilder: (context, idx) => const SizedBox(height: 10),
       itemBuilder: (context, idx) {
         final p = jaringanTasks[idx];
+        // Cari laporan vendor jaringan terbaru untuk permohonan ini
+        final laporanList = _vendorReports
+            .where((r) => r['permohonan_id'].toString() == p.id.toString())
+            .toList();
+        Map<String, dynamic>? latestReport;
+        if (laporanList.isNotEmpty) {
+          // Ambil laporan dengan tanggal terbaru
+          laporanList.sort((a, b) {
+            final tglA =
+                DateTime.tryParse(a['tanggal'] ?? '') ?? DateTime(1970);
+            final tglB =
+                DateTime.tryParse(b['tanggal'] ?? '') ?? DateTime(1970);
+            return tglB.compareTo(tglA);
+          });
+          latestReport = laporanList.first;
+        } else {
+          latestReport = null;
+        }
+        String status = 'Belum Laporan';
+        if (latestReport != null && latestReport['status'] != null) {
+          status = latestReport['status'];
+        }
+        Color badgeColor;
+        Color textColor;
+        if (status == 'selesai') {
+          badgeColor = Colors.green.shade50;
+          textColor = Colors.green;
+        } else if (status == 'proses') {
+          badgeColor = Colors.orange.shade50;
+          textColor = Colors.orange;
+        } else {
+          badgeColor = Colors.red.shade50;
+          textColor = Colors.red;
+        }
         return Container(
           margin: const EdgeInsets.only(bottom: 2),
           decoration: BoxDecoration(
@@ -171,36 +277,79 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Klik untuk mengisi laporan pekerjaan jaringan.',
+                    'Klik untuk melihat/mengisi laporan pekerjaan jaringan.',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ],
               ),
             ),
-            trailing: Icon(
-              Icons.edit_note,
-              color: Colors.green.shade400,
-              size: 28,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: badgeColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                status.toString().toUpperCase(),
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
             onTap: () {
-              // TODO: Navigasi ke form laporan pekerjaan jaringan
-              // Navigator.pushNamed(context, '/vendor-laporan', arguments: p.id);
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Laporan Pekerjaan Jaringan'),
-                  content: const Text(
-                    'Form laporan pekerjaan jaringan untuk vendor akan diimplementasikan di sini.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Tutup'),
-                    ),
-                  ],
-                ),
-              );
+              _showLaporanListDialog(context, p);
             },
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget untuk menampilkan daftar laporan vendor
+  Widget buildVendorReportsList() {
+    if (_loadingReports) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_vendorReports.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text('Belum ada laporan pekerjaan jaringan yang dikirim.'),
+        ),
+      );
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _vendorReports.length,
+      separatorBuilder: (c, i) => const SizedBox(height: 8),
+      itemBuilder: (context, idx) {
+        final r = _vendorReports[idx];
+        return Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+          child: ListTile(
+            leading: Icon(Icons.receipt_long, color: Colors.green.shade400),
+            title: Text(r['jenis_pekerjaan'] ?? '-'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Tanggal:  9${r['tanggal'] ?? '-'}'),
+                if (r['catatan'] != null && r['catatan'].toString().isNotEmpty)
+                  Text('Catatan: ${r['catatan']}'),
+                Text(
+                  'Siap dipasang APP: '
+                  '${(r['siap_pasang_app'] == true) ? 'Ya' : 'Tidak'}',
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -252,12 +401,12 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  // Hapus statistik tahapan horizontal sementara
-                  // Hilangkan SizedBox(height: 24) agar tidak ada jarak ekstra
-                  // List Items
                   Expanded(
                     child: isVendor
-                        ? buildVendorTaskLaporan(getFilteredPermohonan())
+                        ? buildVendorTaskLaporan(
+                            getFilteredPermohonan(),
+                            hanyaSelesai: false,
+                          )
                         : getFilteredPermohonan().isEmpty
                         ? (_selectedStage == null || _selectedStage == 'Semua')
                               ? Center(
@@ -330,7 +479,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
+                                        'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey.shade600,
@@ -444,6 +593,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
                             },
                           ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
       ),
