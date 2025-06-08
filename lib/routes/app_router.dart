@@ -10,6 +10,7 @@ import '../presentation/screens/auth/change_password_screen.dart';
 import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/my_task_screen.dart';
+import '../presentation/screens/jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -43,6 +44,18 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case MyTaskScreen.routeName:
         return MaterialPageRoute(builder: (_) => const MyTaskScreen());
+      case JaringanProgressScreen
+          .routeName: // Ditambahkan: route untuk JaringanProgressScreen
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('permohonanId')) {
+          return MaterialPageRoute(
+            builder: (_) => JaringanProgressScreen(
+              permohonanId: args['permohonanId'] as String,
+              namaPelanggan: args['namaPelanggan'] as String?,
+            ),
+          );
+        }
+        return _errorRoute("Argumen untuk JaringanProgressScreen tidak valid.");
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }

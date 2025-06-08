@@ -11,6 +11,7 @@ import '../widgets/forms/form_kontrak_rinci_widget.dart'; // Import form
 import '../widgets/forms/form_pasang_app_widget.dart'; // Import form
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
+import './jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
 
 extension FirstWhereOrNullExtension<E> on Iterable<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -392,7 +393,11 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
     );
   }
 
-  Widget _buildTahapanFormSummary(TahapanModel tahapan) {
+  Widget _buildTahapanFormSummary(
+    PermohonanModel permohonan,
+    TahapanModel tahapan,
+  ) {
+    // Modifikasi: Tambahkan parameter permohonan
     final data = tahapan.formData ?? {};
     Map<String, dynamic> fields;
     Map<String, IconData> icons;
@@ -530,6 +535,53 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
         labels = {};
     }
     if (fields.isEmpty) {
+      // Ditambahkan: Logika khusus untuk tahap "Jaringan"
+      if (tahapan.nama == "Jaringan") {
+        return Container(
+          // Modifikasi: Bungkus tombol dengan Container yang di-style
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50, // Style mirip "Belum ada data"
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blue.shade100, width: 1.2),
+          ),
+          child: Center(
+            // Tombol tetap di tengah
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.assessment_outlined, size: 20),
+              label: const Text('Lihat Progress Jaringan'),
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  JaringanProgressScreen
+                      .routeName, // Navigasi ke JaringanProgressScreen
+                  arguments: {
+                    'permohonanId': permohonan.id,
+                    'namaPelanggan': permohonan.namaPelanggan,
+                  },
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      // Original "Belum ada data" untuk tahap lain
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
@@ -1405,6 +1457,8 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                                                 )
                                               else
                                                 _buildTahapanFormSummary(
+                                                  // Modifikasi: Teruskan permohonan
+                                                  permohonan,
                                                   tahapan,
                                                 ),
                                             ],
