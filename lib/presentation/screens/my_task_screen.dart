@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/user_model.dart';
@@ -15,7 +16,8 @@ class MyTaskScreen extends StatefulWidget {
   State<MyTaskScreen> createState() => _MyTaskScreenState();
 }
 
-class _MyTaskScreenState extends State<MyTaskScreen> {
+class _MyTaskScreenState extends State<MyTaskScreen>
+    with WidgetsBindingObserver {
   UserProfileModel? _profile;
   String? _selectedStage;
   List<PermohonanModel> _permohonanList = [];
@@ -35,11 +37,42 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
     'Manager': [], // Semua
   };
 
+  StreamSubscription? _reportsSubscription;
+
+  late FocusNode _focusNode;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
     _loadProfileAndTasks();
-    _loadVendorReports();
+    // _loadVendorReports(); // Removed: will be called after permohonan list is loaded
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus && _profile?.role == 'Vendor') {
+      _loadVendorReports();
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _reportsSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && _profile?.role == 'Vendor') {
+      // Reload vendor reports when app comes back to foreground
+      _loadVendorReports();
+    }
   }
 
   Future<void> _loadProfileAndTasks() async {
@@ -68,18 +101,40 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
       _permohonanList = permohonanList;
       _loading = false;
     });
+    // Load vendor reports after permohonan list is loaded
+    await _loadVendorReports();
   }
 
-  // Method untuk memuat laporan vendor
+  // Method untuk memuat laporan vendor dengan real-time subscription
   Future<void> _loadVendorReports() async {
     if (_profile?.role != 'Vendor') return;
     setState(() => _loadingReports = true);
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      setState(() {
+        _vendorReports = [];
+        _loadingReports = false;
+      });
+      return;
+    }
+    // Get all permohonan IDs that are in Jaringan stage
+    final jaringanPermohonanIds = _permohonanList
+        .where((p) => p.tahapanAktif == 'Jaringan')
+        .map((p) => p.id)
+        .toList();
+    if (jaringanPermohonanIds.isEmpty) {
+      setState(() {
+        _vendorReports = [];
+        _loadingReports = false;
+      });
+      return;
+    }
+    // Load reports only for permohonan in Jaringan stage
     final reports = await Supabase.instance.client
         .from('vendor_laporan_jaringan')
         .select()
         .eq('user_id', user.id)
+        .inFilter('permohonan_id', jaringanPermohonanIds)
         .order('tanggal', ascending: false);
     setState(() {
       _vendorReports = List<Map<String, dynamic>>.from(reports);
@@ -144,13 +199,27 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
               permohonanId: permohonan.id,
               namaPelanggan: permohonan.namaPelanggan,
               onLaporanAdded: () async {
+                // Refresh laporan dan UI setelah menambah/mengubah laporan
                 await _loadVendorReports();
+                if (mounted) {
+                  setState(() {}); // Memastikan UI diperbarui
+                }
+                print(
+                  'DEBUG: Refreshed vendor reports after adding/updating report',
+                );
               },
             ),
           ),
         );
       },
-    );
+    ).then((_) async {
+      // Refresh lagi setelah dialog ditutup untuk memastikan data terbaru
+      await _loadVendorReports();
+      if (mounted) {
+        setState(() {}); // Memastikan UI diperbarui
+      }
+      print('DEBUG: Refreshed vendor reports after dialog closed');
+    });
   }
 
   Widget buildVendorTaskLaporan(
@@ -187,10 +256,20 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
       separatorBuilder: (context, idx) => const SizedBox(height: 10),
       itemBuilder: (context, idx) {
         final p = jaringanTasks[idx];
+
+        // Debug logging untuk troubleshooting
+        // Removed debug prints for cleaner output
+
         // Cari laporan vendor jaringan terbaru untuk permohonan ini
-        final laporanList = _vendorReports
-            .where((r) => r['permohonan_id'].toString() == p.id.toString())
-            .toList();
+        // Removed debug prints for cleaner output
+        final laporanList = _vendorReports.where((r) {
+          final reportId = r['permohonan_id'];
+          final String pIdCleaned = p.id.toString().trim();
+          final String reportIdCleaned = reportId.toString().trim();
+          final bool idsMatch = reportIdCleaned == pIdCleaned;
+          return idsMatch;
+        }).toList();
+
         Map<String, dynamic>? latestReport;
         if (laporanList.isNotEmpty) {
           // Ambil laporan dengan tanggal terbaru
@@ -205,6 +284,7 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
         } else {
           latestReport = null;
         }
+
         String status = 'Belum Laporan';
         if (latestReport != null && latestReport['status'] != null) {
           status = latestReport['status'];
@@ -341,7 +421,8 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tanggal:  9${r['tanggal'] ?? '-'}'),
+                // Perbaikan: Menghilangkan karakter aneh " 9"
+                Text('Tanggal: ${r['tanggal'] ?? '-'}'),
                 if (r['catatan'] != null && r['catatan'].toString().isNotEmpty)
                   Text('Catatan: ${r['catatan']}'),
                 Text(
@@ -395,207 +476,213 @@ class _MyTaskScreenState extends State<MyTaskScreen> {
         ],
       ),
       drawer: AppDrawer(currentRoute: MyTaskScreen.routeName),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Expanded(
-                    child: isVendor
-                        ? buildVendorTaskLaporan(
-                            getFilteredPermohonan(),
-                            hanyaSelesai: false,
-                          )
-                        : getFilteredPermohonan().isEmpty
-                        ? (_selectedStage == null || _selectedStage == 'Semua')
-                              ? Center(
-                                  child: FractionallySizedBox(
-                                    widthFactor: 0.8,
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 400,
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(32),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              blurRadius: 8,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
+      body: Focus(
+        focusNode: _focusNode,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    Expanded(
+                      child: isVendor
+                          ? buildVendorTaskLaporan(
+                              getFilteredPermohonan(),
+                              hanyaSelesai: false,
+                            )
+                          : getFilteredPermohonan().isEmpty
+                          ? (_selectedStage == null ||
+                                    _selectedStage == 'Semua')
+                                ? Center(
+                                    child: FractionallySizedBox(
+                                      widthFactor: 0.8,
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 400,
                                         ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.search_off,
-                                              size: 64,
-                                              color: Colors.grey.shade300,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(32),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              'Tidak ada tugas yang menunggu dikerjakan.',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.grey.shade600,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 8,
+                                                offset: Offset(0, 2),
                                               ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.search_off,
+                                                size: 64,
+                                                color: Colors.grey.shade300,
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Tidak ada tugas yang menunggu dikerjakan.',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                )
-                              : Container(
-                                  padding: const EdgeInsets.all(32),
+                                  )
+                                : Container(
+                                    padding: const EdgeInsets.all(32),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black12,
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.search_off,
+                                          size: 64,
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                          : ListView.separated(
+                              itemCount: getFilteredPermohonan().length,
+                              separatorBuilder: (context, idx) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, idx) {
+                                final p = getFilteredPermohonan()[idx];
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black12,
+                                        color: Colors.blue.shade50,
                                         blurRadius: 8,
-                                        offset: Offset(0, 2),
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.search_off,
-                                        size: 64,
-                                        color: Colors.grey.shade300,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 12,
+                                    ),
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.blue.shade50,
+                                      child: Icon(
+                                        Icons.assignment_turned_in,
+                                        color: Colors.blue.shade400,
                                       ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
-                                        style: TextStyle(
+                                    ),
+                                    title: Padding(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      child: Text(
+                                        p.namaPelanggan,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
                                           fontSize: 16,
-                                          color: Colors.grey.shade600,
                                         ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                )
-                        : ListView.separated(
-                            itemCount: getFilteredPermohonan().length,
-                            separatorBuilder: (context, idx) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, idx) {
-                              final p = getFilteredPermohonan()[idx];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.blue.shade50,
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 12,
-                                  ),
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.blue.shade50,
-                                    child: Icon(
-                                      Icons.assignment_turned_in,
-                                      color: Colors.blue.shade400,
-                                    ),
-                                  ),
-                                  title: Padding(
-                                    padding: const EdgeInsets.only(bottom: 2),
-                                    child: Text(
-                                      p.namaPelanggan,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
                                       ),
                                     ),
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 2),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.timeline,
-                                          size: 16,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Tahap: ${p.tahapanAktif}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade700,
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.timeline,
+                                            size: 16,
+                                            color: Colors.grey.shade400,
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Tahap: ${p.tahapanAktif}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          p.statusKeseluruhan.name == 'selesai'
-                                          ? Colors.green.shade50
-                                          : (p.statusKeseluruhan.name ==
-                                                    'proses'
-                                                ? Colors.orange.shade50
-                                                : Colors.red.shade50),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      p.statusKeseluruhan.name.toUpperCase(),
-                                      style: TextStyle(
+                                    trailing: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
                                         color:
                                             p.statusKeseluruhan.name ==
                                                 'selesai'
-                                            ? Colors.green
+                                            ? Colors.green.shade50
                                             : (p.statusKeseluruhan.name ==
                                                       'proses'
-                                                  ? Colors.orange
-                                                  : Colors.red),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                                  ? Colors.orange.shade50
+                                                  : Colors.red.shade50),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        p.statusKeseluruhan.name.toUpperCase(),
+                                        style: TextStyle(
+                                          color:
+                                              p.statusKeseluruhan.name ==
+                                                  'selesai'
+                                              ? Colors.green
+                                              : (p.statusKeseluruhan.name ==
+                                                        'proses'
+                                                    ? Colors.orange
+                                                    : Colors.red),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/permohonan-detail',
+                                        arguments: p.id,
+                                      );
+                                    },
                                   ),
-                                  onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/permohonan-detail',
-                                      arguments: p.id,
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+        ),
       ),
     );
   }
