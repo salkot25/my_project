@@ -3,7 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VendorLaporanJaringanHistoryList extends StatefulWidget {
   final int? maxItems;
-  const VendorLaporanJaringanHistoryList({super.key, this.maxItems});
+  final DateTime? selectedDate;
+  final bool isMonthly;
+  final String searchQuery;
+  const VendorLaporanJaringanHistoryList({
+    super.key,
+    this.maxItems,
+    this.selectedDate,
+    this.isMonthly = false,
+    this.searchQuery = '',
+  });
 
   @override
   State<VendorLaporanJaringanHistoryList> createState() =>
@@ -22,11 +31,51 @@ class _VendorLaporanJaringanHistoryListState
   }
 
   void _refreshLaporan() {
-    _laporanFuture = Supabase.instance.client
+    var query = Supabase.instance.client
         .from('vendor_laporan_jaringan')
-        .select()
-        .order('tanggal', ascending: false)
-        .then((data) => List<Map<String, dynamic>>.from(data));
+        .select();
+    if (widget.selectedDate != null) {
+      if (widget.isMonthly) {
+        final start = DateTime(
+          widget.selectedDate!.year,
+          widget.selectedDate!.month,
+          1,
+        );
+        final end = DateTime(
+          widget.selectedDate!.year,
+          widget.selectedDate!.month + 1,
+          1,
+        );
+        query = query
+            .gte('tanggal', start.toIso8601String())
+            .lt('tanggal', end.toIso8601String());
+      } else {
+        final start = DateTime(
+          widget.selectedDate!.year,
+          widget.selectedDate!.month,
+          widget.selectedDate!.day,
+        );
+        final end = start.add(const Duration(days: 1));
+        query = query
+            .gte('tanggal', start.toIso8601String())
+            .lt('tanggal', end.toIso8601String());
+      }
+    }
+    _laporanFuture = query.order('tanggal', ascending: false).then((data) {
+      var list = List<Map<String, dynamic>>.from(data);
+      if (widget.searchQuery.isNotEmpty) {
+        final q = widget.searchQuery.toLowerCase();
+        list = list.where((item) {
+          return (item['jenis_pekerjaan']?.toString().toLowerCase().contains(
+                    q,
+                  ) ??
+                  false) ||
+              (item['status']?.toString().toLowerCase().contains(q) ?? false) ||
+              (item['catatan']?.toString().toLowerCase().contains(q) ?? false);
+        }).toList();
+      }
+      return list;
+    });
     // Ambil semua permohonan (id, nama_pelanggan, alamat)
     _permohonanMapFuture = Supabase.instance.client
         .from('permohonan')
@@ -45,6 +94,16 @@ class _VendorLaporanJaringanHistoryListState
         .inFilter('user_id', userIds);
     final list = List<Map<String, dynamic>>.from(data);
     return {for (var u in list) u['user_id']: u['username'] ?? '-'};
+  }
+
+  @override
+  void didUpdateWidget(covariant VendorLaporanJaringanHistoryList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedDate != widget.selectedDate ||
+        oldWidget.isMonthly != widget.isMonthly ||
+        oldWidget.searchQuery != widget.searchQuery) {
+      _refreshLaporan();
+    }
   }
 
   @override
