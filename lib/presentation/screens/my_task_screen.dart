@@ -5,7 +5,6 @@ import '../../data/models/user_model.dart';
 import '../../data/models/permohonan_model.dart';
 import '../../core/constants/app_stages.dart';
 import '../widgets/app_drawer.dart';
-import '../widgets/vendor_laporan_jaringan_form.dart';
 import '../widgets/vendor_laporan_jaringan_history.dart';
 
 class MyTaskScreen extends StatefulWidget {
@@ -26,6 +25,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
   // Tambahkan variabel untuk laporan vendor
   List<Map<String, dynamic>> _vendorReports = [];
   bool _loadingReports = false;
+
+  // Untuk menyimpan snapshot ID permohonan terakhir
+  Set<String> _lastPermohonanIds = {};
 
   // Tahapan yang relevan untuk setiap role
   static const Map<String, List<String>> roleStages = {
@@ -97,10 +99,28 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     final permohonanList = (data as List)
         .map((map) => PermohonanModel.fromMap(map, []))
         .toList();
+    // Deteksi tugas/data baru
+    final newIds = permohonanList.map((p) => p.id).toSet();
+    final addedIds = newIds.difference(_lastPermohonanIds);
     setState(() {
       _permohonanList = permohonanList;
       _loading = false;
+      _lastPermohonanIds = newIds;
     });
+    // Notifikasi jika ada tugas/data baru
+    if (_lastPermohonanIds.isNotEmpty && addedIds.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ada tugas/data baru di My Task!'),
+              duration: Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      });
+    }
     // Load vendor reports after permohonan list is loaded
     await _loadVendorReports();
   }
@@ -204,9 +224,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                 if (mounted) {
                   setState(() {}); // Memastikan UI diperbarui
                 }
-                print(
-                  'DEBUG: Refreshed vendor reports after adding/updating report',
-                );
+                // print(
+                //   'DEBUG: Refreshed vendor reports after adding/updating report',
+                // );
               },
             ),
           ),
@@ -218,7 +238,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       if (mounted) {
         setState(() {}); // Memastikan UI diperbarui
       }
-      print('DEBUG: Refreshed vendor reports after dialog closed');
+      // print('DEBUG: Refreshed vendor reports after dialog closed');
     });
   }
 

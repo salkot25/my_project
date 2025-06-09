@@ -18,9 +18,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
   @override
   void onChange(Change<PermohonanState> change) {
     super.onChange(change);
-    print(
-      'PermohonanCubit STATE CHANGE: ${change.currentState} -> ${change.nextState}',
-    );
+    // print(
+    //   'PermohonanCubit STATE CHANGE: ${change.currentState} -> ${change.nextState}',
+    // );
   }
 
   void loadPermohonanList() {
@@ -30,9 +30,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
         .select()
         .order('tanggal_pengajuan', ascending: false)
         .then((data) {
-          print(
-            'PermohonanCubit: loadPermohonanList - Supabase call successful. Data count: ${data.length}',
-          );
+          // print(
+          //   'PermohonanCubit: loadPermohonanList - Supabase call successful. Data count: ${data.length}',
+          // );
           // Untuk daftar, kita hanya perlu data permohonan, tahapan akan dimuat di detail
           final permohonanList = data
               .map((map) => PermohonanModel.fromMap(map, []))
@@ -40,22 +40,22 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           emit(PermohonanListLoaded(permohonanList));
         })
         .catchError((e, stackTrace) {
-          print(
-            'PermohonanCubit: loadPermohonanList - Supabase call failed. Error: $e',
-          );
-          print(
-            'PermohonanCubit: loadPermohonanList - StackTrace: $stackTrace',
-          );
+          // print(
+          //   'PermohonanCubit: loadPermohonanList - Supabase call failed. Error: $e',
+          // );
+          // print(
+          //   'PermohonanCubit: loadPermohonanList - StackTrace: $stackTrace',
+          // );
           emit(
-            PermohonanError("Gagal memuat daftar permohonan: ${e.toString()}"),
+            PermohonanError("Gagal memuat daftar permohonan: ${e.toString()}"),
           );
         });
   }
 
   void loadPermohonanDetail(String idPermohonan) {
-    print(
-      'PermohonanCubit: loadPermohonanDetail called for ID $idPermohonan. Current state: $state',
-    );
+    // print(
+    //   'PermohonanCubit: loadPermohonanDetail called for ID $idPermohonan. Current state: $state',
+    // );
     emit(PermohonanLoading());
     try {
       // Ambil data permohonan
@@ -65,9 +65,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           .eq('id', idPermohonan)
           .single()
           .then((permohonanData) {
-            print(
-              'PermohonanCubit: loadPermohonanDetail - Permohonan data fetched.',
-            );
+            // print(
+            //   'PermohonanCubit: loadPermohonanDetail - Permohonan data fetched.',
+            // );
             // Ambil data tahapan terkait
             _supabase
                 .from('tahapan')
@@ -75,9 +75,9 @@ class PermohonanCubit extends Cubit<PermohonanState> {
                 .eq('permohonan_id', idPermohonan)
                 .order('urutan', ascending: true)
                 .then((tahapanData) {
-                  print(
-                    'PermohonanCubit: loadPermohonanDetail - Tahapan data fetched.',
-                  );
+                  // print(
+                  //   'PermohonanCubit: loadPermohonanDetail - Tahapan data fetched.',
+                  // );
                   final permohonan = PermohonanModel.fromMap(
                     permohonanData,
                     tahapanData.map((t) => TahapanModel.fromMap(t)).toList(),
@@ -85,22 +85,22 @@ class PermohonanCubit extends Cubit<PermohonanState> {
                   emit(PermohonanDetailLoaded(permohonan));
                 })
                 .catchError((e) {
-                  print(
-                    'PermohonanCubit: loadPermohonanDetail - Error fetching tahapan: $e',
-                  );
+                  // print(
+                  //   'PermohonanCubit: loadPermohonanDetail - Error fetching tahapan: $e',
+                  // );
                   emit(
-                    PermohonanError("Gagal memuat tahapan: ${e.toString()}"),
+                    PermohonanError("Gagal memuat tahapan: ${e.toString()}"),
                   );
                 });
           })
           .catchError((e) {
-            print(
-              'PermohonanCubit: loadPermohonanDetail - Error fetching permohonan: $e',
-            );
-            emit(PermohonanError("Gagal memuat permohonan: ${e.toString()}"));
+            // print(
+            //   'PermohonanCubit: loadPermohonanDetail - Error fetching permohonan: $e',
+            // );
+            emit(PermohonanError("Gagal memuat permohonan: ${e.toString()}"));
           });
     } catch (e) {
-      print('PermohonanCubit: loadPermohonanDetail - General error: $e');
+      // print('PermohonanCubit: loadPermohonanDetail - General error: $e');
       emit(const PermohonanError("Permohonan tidak ditemukan"));
     }
   }
@@ -115,10 +115,10 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     String? alamat,
     String? waPelanggan, // Tambah parameter WA
   }) {
-    print(
-      'PermohonanCubit: tambahPermohonanBaru called for $namaPelanggan. Current state: $state',
-    );
-    final newId = "PERM_${DateTime.now().millisecondsSinceEpoch}";
+    // print(
+    //   'PermohonanCubit: tambahPermohonanBaru called for $namaPelanggan. Current state: $state',
+    // );
+    final newId = "PERM_${DateTime.now().millisecondsSinceEpoch}";
     final permohonanBaru = PermohonanModel.baru(
       id: newId,
       namaPelanggan: namaPelanggan,

@@ -11,6 +11,7 @@ import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/my_task_screen.dart';
 import '../presentation/screens/jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
+import '../presentation/screens/vendor_laporan_jaringan_list_screen.dart'; // Ditambahkan: import untuk VendorLaporanJaringanListScreen
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -56,6 +57,10 @@ class AppRouter {
           );
         }
         return _errorRoute("Argumen untuk JaringanProgressScreen tidak valid.");
+      case '/vendor-laporan-jaringan': // Ditambahkan: route untuk VendorLaporanJaringanListScreen
+        return MaterialPageRoute(
+          builder: (_) => const VendorLaporanJaringanListScreen(),
+        );
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }

@@ -56,7 +56,7 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
 
   @override
   void didPopNext() {
-    print("PermohonanListScreen: didPopNext - Memuat ulang daftar permohonan");
+    // print("PermohonanListScreen: didPopNext - Memuat ulang daftar permohonan");
     context.read<PermohonanCubit>().loadPermohonanList();
   }
 
@@ -237,6 +237,15 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () {
+              context.read<PermohonanCubit>().loadPermohonanList();
+            },
+          ),
+        ],
       ),
       drawer: const AppDrawer(),
       body: Padding(

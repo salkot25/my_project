@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   equatable: ^2.0.7
-  supabase_flutter: ^2.5.0 # Tambahkan ini
+  supabase_flutter: ^2.9.0 # Tambahkan ini
   flutter_bloc: ^9.1.1
   bloc: ^9.0.0
   intl: ^0.20.2

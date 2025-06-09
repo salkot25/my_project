@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/app_drawer.dart';
 import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../../data/models/permohonan_model.dart';
+import 'package:my_project/data/models/tahapan_model.dart';
+import 'package:my_project/presentation/widgets/vendor_laporan_jaringan_history_list.dart';
+import 'package:my_project/presentation/screens/vendor_laporan_jaringan_list_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -52,32 +56,38 @@ class DashboardScreen extends StatelessWidget {
                   tahapCount[aktif] = tahapCount[aktif]! + 1;
                 }
               }
-              // Dummy vendor (bisa diganti dengan data asli jika ada field vendor)
+              // Ambil vendor dari tahapan 'Kontrak Rinci' pada setiap permohonan
+              Set<String> vendorList = {'Semua Vendor'};
               final vendorMap = <String, int>{};
               for (var p in list) {
-                // Ganti dengan field vendor jika ada, contoh: p.vendor ?? 'Lainnya'
-                vendorMap['KAG'] = (vendorMap['KAG'] ?? 0) + 1;
-              }
-              // Kumpulkan daftar vendor unik (dummy: 'KAG', ganti dengan field vendor jika ada)
-              final vendorList = <String>{'Semua Vendor'};
-              for (var p in list) {
-                // Ganti dengan field vendor jika ada, contoh: p.vendor ?? 'Lainnya'
-                vendorList.add('KAG');
+                final kontrakTahap = getKontrakTahap(p.daftarTahapan);
+                String vendor = 'Lainnya';
+                final vendorValue = kontrakTahap?.formData?['vendor'];
+                if (vendorValue != null &&
+                    vendorValue.toString().trim().isNotEmpty) {
+                  vendor = vendorValue.toString().trim();
+                }
+                vendorList.add(vendor);
+                vendorMap[vendor] = (vendorMap[vendor] ?? 0) + 1;
               }
               String selectedVendor = 'Semua Vendor';
               return StatefulBuilder(
-                builder: (context, setState) {
+                builder: (context, setStateBuilder) {
                   // Filter list berdasarkan vendor jika dipilih
                   final filteredList = selectedVendor == 'Semua Vendor'
                       ? list
-                      : list.where((p) => 'KAG' == selectedVendor).toList();
+                      : list.where((p) {
+                          final kontrakTahap = getKontrakTahap(p.daftarTahapan);
+                          String vendor = 'Lainnya';
+                          final vendorValue = kontrakTahap?.formData?['vendor'];
+                          if (vendorValue != null &&
+                              vendorValue.toString().trim().isNotEmpty) {
+                            vendor = vendorValue.toString().trim();
+                          }
+                          return vendor == selectedVendor;
+                        }).toList();
                   // Hitung ulang statistik berdasarkan filteredList
                   final filteredTotal = filteredList.length;
-                  final filteredSelesai = filteredList
-                      .where(
-                        (p) => p.statusKeseluruhan == StatusPermohonan.selesai,
-                      )
-                      .length;
                   final filteredProses = filteredList
                       .where(
                         (p) => p.statusKeseluruhan == StatusPermohonan.proses,
@@ -95,9 +105,17 @@ class DashboardScreen extends StatelessWidget {
                   }
                   final filteredVendorMap = <String, int>{};
                   for (var p in filteredList) {
-                    filteredVendorMap['KAG'] =
-                        (filteredVendorMap['KAG'] ?? 0) + 1;
+                    final kontrakTahap = getKontrakTahap(p.daftarTahapan);
+                    String vendor = 'Lainnya';
+                    final vendorValue = kontrakTahap?.formData?['vendor'];
+                    if (vendorValue != null &&
+                        vendorValue.toString().trim().isNotEmpty) {
+                      vendor = vendorValue.toString().trim();
+                    }
+                    filteredVendorMap[vendor] =
+                        (filteredVendorMap[vendor] ?? 0) + 1;
                   }
+                  final myTaskCount = _getMyTaskCount(list);
                   return ListView(
                     children: [
                       Row(
@@ -105,7 +123,7 @@ class DashboardScreen extends StatelessWidget {
                           _DashboardCard(
                             icon: Icons.folder,
                             value: filteredTotal.toString(),
-                            label: 'Total Proyek',
+                            label: 'Total Project',
                             color: Colors.lightBlue,
                             gradientColors: [
                               Colors.lightBlue.shade300,
@@ -115,8 +133,8 @@ class DashboardScreen extends StatelessWidget {
                           const SizedBox(width: 16),
                           _DashboardCard(
                             icon: Icons.check_circle,
-                            value: filteredSelesai.toString(),
-                            label: 'Selesai',
+                            value: myTaskCount.toString(),
+                            label: 'My Task',
                             color: Colors.green,
                             gradientColors: [
                               Colors.green.shade300,
@@ -175,7 +193,7 @@ class DashboardScreen extends StatelessWidget {
                                       .toList(),
                                   onChanged: (v) {
                                     if (v != null) {
-                                      setState(() => selectedVendor = v);
+                                      setStateBuilder(() => selectedVendor = v);
                                     }
                                   },
                                   underline: Container(),
@@ -234,30 +252,29 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      const Text(
-                        'Proyek per Vendor',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Progres Jaringan',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/vendor-laporan-jaringan',
+                              );
+                            },
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        children: filteredVendorMap.entries
-                            .map(
-                              (e) => Chip(
-                                avatar: const Icon(
-                                  Icons.apartment,
-                                  size: 18,
-                                  color: Colors.blue,
-                                ),
-                                label: Text('${e.key}: ${e.value}'),
-                                backgroundColor: Colors.blue[50],
-                              ),
-                            )
-                            .toList(),
-                      ),
+                      VendorLaporanJaringanHistoryList(maxItems: 3),
                     ],
                   );
                 },
@@ -273,6 +290,16 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// Helper to get the 'Kontrak Rinci' stage or null
+TahapanModel? getKontrakTahap(List<TahapanModel> tahapanList) {
+  for (final t in tahapanList) {
+    if (t.nama.toLowerCase().contains('kontrak')) {
+      return t;
+    }
+  }
+  return null;
 }
 
 class _DashboardCard extends StatelessWidget {
@@ -337,4 +364,19 @@ class _DashboardCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// Tambahkan fungsi helper di bawah class DashboardScreen
+int _getMyTaskCount(List<PermohonanModel> list) {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return 0;
+  // Asumsi: permohonan yang tahap aktifnya 'Jaringan' dan ada di My Task user (vendor)
+  return list.where((p) {
+    final jaringanTahap = p.daftarTahapan.firstWhere(
+      (t) => t.nama == 'Jaringan',
+      orElse: () => const TahapanModel(nama: '', formData: {}),
+    );
+    final userId = jaringanTahap.formData?['user_id'];
+    return p.tahapanAktif == 'Jaringan' && userId == user.id;
+  }).length;
 }
