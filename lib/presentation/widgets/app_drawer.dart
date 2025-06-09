@@ -3,6 +3,7 @@ import '../screens/permohonan_list_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/my_task_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../screens/permohonan_map_screen.dart'; // Import layar peta
 import '../../data/models/user_model.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -115,6 +116,18 @@ class AppDrawer extends StatelessWidget {
                         Navigator.pushReplacementNamed(
                           context,
                           MyTaskScreen.routeName,
+                        );
+                      },
+                    ),
+                    _DrawerCardMenu(
+                      icon: Icons.map_outlined, // Ganti dengan ikon yang sesuai
+                      title: 'Peta Permohonan',
+                      isSelected: currentRoute == PermohonanMapScreen.routeName,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(
+                          context,
+                          PermohonanMapScreen.routeName,
                         );
                       },
                     ),

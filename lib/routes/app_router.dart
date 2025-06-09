@@ -12,6 +12,7 @@ import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/my_task_screen.dart';
 import '../presentation/screens/jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
 import '../presentation/screens/vendor_laporan_jaringan_list_screen.dart'; // Ditambahkan: import untuk VendorLaporanJaringanListScreen
+import '../presentation/screens/permohonan_map_screen.dart'; // Import layar peta
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -61,6 +62,9 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const VendorLaporanJaringanListScreen(),
         );
+      case PermohonanMapScreen
+          .routeName: // Tambahkan rute untuk Peta Permohonan
+        return MaterialPageRoute(builder: (_) => const PermohonanMapScreen());
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");
     }

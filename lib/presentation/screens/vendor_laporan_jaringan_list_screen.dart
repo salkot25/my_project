@@ -14,9 +14,11 @@ class VendorLaporanJaringanListScreen extends StatelessWidget {
         foregroundColor: Colors.black87,
         elevation: 0.5,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: VendorLaporanJaringanHistoryList(),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: VendorLaporanJaringanHistoryList(),
+        ),
       ),
     );
   }

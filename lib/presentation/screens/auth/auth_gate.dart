@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:my_project/presentation/screens/dashboard_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../permohonan_list_screen.dart';
 import 'login_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -16,7 +16,7 @@ class AuthGate extends StatelessWidget {
         if (snapshot.hasData) {
           final session = snapshot.data?.session;
           if (session != null) {
-            return const PermohonanListScreen(); // Pengguna sudah login
+            return const DashboardScreen(); // Pengguna sudah login
           }
         }
         return const LoginScreen(); // Pengguna belum login
