@@ -20,6 +20,7 @@ class PermohonanListScreen extends StatefulWidget {
 class _PermohonanListScreenState extends State<PermohonanListScreen>
     with RouteAware {
   String selectedFilter = 'Semua';
+  String searchQuery = '';
   final List<String> filterOptions = [
     'Semua',
     'Proses',
@@ -195,22 +196,37 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
   }
 
   List<PermohonanModel> _filterPermohonan(List<PermohonanModel> list) {
-    if (selectedFilter == 'Semua') return list;
-
-    StatusPermohonan? status;
-    switch (selectedFilter) {
-      case 'Proses':
-        status = StatusPermohonan.proses;
-        break;
-      case 'Selesai':
-        status = StatusPermohonan.selesai;
-        break;
-      case 'Dibatalkan':
-        status = StatusPermohonan.dibatalkan;
-        break;
+    List<PermohonanModel> filtered = list;
+    if (selectedFilter != 'Semua') {
+      StatusPermohonan? status;
+      switch (selectedFilter) {
+        case 'Proses':
+          status = StatusPermohonan.proses;
+          break;
+        case 'Selesai':
+          status = StatusPermohonan.selesai;
+          break;
+        case 'Dibatalkan':
+          status = StatusPermohonan.dibatalkan;
+          break;
+      }
+      filtered = filtered.where((p) => p.statusKeseluruhan == status).toList();
     }
-
-    return list.where((p) => p.statusKeseluruhan == status).toList();
+    if (searchQuery.isNotEmpty) {
+      filtered = filtered
+          .where(
+            (p) =>
+                p.namaPelanggan.toLowerCase().contains(
+                  searchQuery.toLowerCase(),
+                ) ||
+                (p.alamat != null &&
+                    p.alamat!.toLowerCase().contains(
+                      searchQuery.toLowerCase(),
+                    )),
+          )
+          .toList();
+    }
+    return filtered;
   }
 
   @override
@@ -324,7 +340,7 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
 
                     const SizedBox(height: 24),
 
-                    // Filter Section
+                    // Filter/Search Section
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -338,44 +354,71 @@ class _PermohonanListScreenState extends State<PermohonanListScreen>
                         ],
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Daftar Permohonan',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButton<String>(
-                              value: selectedFilter,
-                              items: filterOptions
-                                  .map(
-                                    (option) => DropdownMenuItem(
-                                      value: option,
-                                      child: Text(option),
+                          Row(
+                            children: [
+                              // Search Field
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Pencarian',
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Colors.blue.shade400,
                                     ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() => selectedFilter = value);
-                                }
-                              },
-                              underline: Container(),
-                              icon: Icon(
-                                Icons.filter_list,
-                                color: Colors.grey.shade600,
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 0,
+                                      horizontal: 16,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      searchQuery = value;
+                                    });
+                                  },
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 12),
+                              // Filter Status Dropdown
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: DropdownButton<String>(
+                                  value: selectedFilter,
+                                  items: filterOptions
+                                      .map(
+                                        (option) => DropdownMenuItem(
+                                          value: option,
+                                          child: Text(option),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() => selectedFilter = value);
+                                    }
+                                  },
+                                  underline: Container(),
+                                  icon: Icon(
+                                    Icons.filter_list,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
