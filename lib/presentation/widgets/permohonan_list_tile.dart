@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/permohonan_model.dart';
+import 'tahapan_progress_circle.dart';
+import '../../core/constants/app_stages.dart';
 
 class PermohonanListTile extends StatelessWidget {
   final PermohonanModel permohonan;
@@ -19,8 +21,6 @@ class PermohonanListTile extends StatelessWidget {
         return Colors.green;
       case StatusPermohonan.dibatalkan:
         return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -32,7 +32,7 @@ class PermohonanListTile extends StatelessWidget {
         return Colors.orange;
       case Prioritas.rendah:
         return Colors.green;
-      default:
+      case null:
         return Colors.grey;
     }
   }
@@ -49,6 +49,27 @@ class PermohonanListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
+    final String alamat =
+        (permohonan.alamat == null || permohonan.alamat!.isEmpty)
+        ? '-'
+        : permohonan.alamat!;
+
+    // Cari index tahapan aktif dari nama di permohonan.tahapanAktif
+    int tahapIndex = alurTahapanDefault.indexWhere(
+      (t) => t == permohonan.tahapanAktif,
+    );
+    final int totalTahapan = alurTahapanDefault.length;
+    double progress = 0;
+    if (permohonan.statusKeseluruhan == StatusPermohonan.selesai) {
+      progress = 1.0;
+    } else if (permohonan.statusKeseluruhan == StatusPermohonan.dibatalkan) {
+      progress = 0.0;
+    } else if (tahapIndex >= 0) {
+      progress = (tahapIndex) / totalTahapan;
+    } else {
+      progress = 0.0;
+    }
+    final int percentValue = (progress * 100).round();
 
     return GestureDetector(
       onTap: onTap,
@@ -86,7 +107,6 @@ class PermohonanListTile extends StatelessWidget {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -94,27 +114,21 @@ class PermohonanListTile extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // Customer Icon with Gradient Background
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              statusColor.withOpacity(0.1),
-                              statusColor.withOpacity(0.2),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.person_outline,
-                          color: statusColor,
-                          size: 24,
+                      // Progress Circle Avatar
+                      TahapanProgressCircle(
+                        total: 100,
+                        done: percentValue,
+                        size: 44,
+                        mainColor: statusColor,
+                        bgColor: Colors.grey.shade200,
+                        textStyle: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      // Customer Name and ID
+                      // Customer Name and Address
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,16 +142,17 @@ class PermohonanListTile extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'ID: ${permohonan.id}',
+                              alamat,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-
                       // Current Stage Badge
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -177,7 +192,6 @@ class PermohonanListTile extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -210,7 +224,6 @@ class PermohonanListTile extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       // Priority Badge (if exists)
                       if (permohonan.prioritas != null) ...[
                         const SizedBox(width: 8),
@@ -247,7 +260,6 @@ class PermohonanListTile extends StatelessWidget {
                           ),
                         ),
                       ],
-
                       // Jenis Permohonan Badge (if exists)
                       if (permohonan.jenisPermohonan != null) ...[
                         const SizedBox(width: 8),
