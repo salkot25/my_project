@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/permohonan_model.dart';
+import '../../data/models/tahapan_model.dart';
 import '../../core/constants/app_stages.dart';
 import '../widgets/app_drawer.dart';
-import '../widgets/vendor_laporan_jaringan_history.dart';
+import 'vendor_laporan_jaringan_screen.dart';
 
 class MyTaskScreen extends StatefulWidget {
   const MyTaskScreen({super.key});
@@ -95,24 +96,45 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
   Future<void> _loadPermohonanList(UserProfileModel profile) async {
     setState(() => _loading = true);
-    final data = await Supabase.instance.client.from('permohonan').select();
-    final permohonanList = (data as List)
-        .map((map) => PermohonanModel.fromMap(map, []))
-        .toList();
+
+    // Load permohonan data
+    final permohonanData = await Supabase.instance.client
+        .from('permohonan')
+        .select();
+
+    // Load tahapan data for each permohonan
+    final permohonanList = await Future.wait(
+      (permohonanData as List).map((map) async {
+        final tahapanData = await Supabase.instance.client
+            .from('tahapan')
+            .select()
+            .eq('permohonan_id', map['id'])
+            .order('urutan');
+
+        final tahapanList = (tahapanData as List)
+            .map((t) => TahapanModel.fromMap(t))
+            .toList();
+
+        return PermohonanModel.fromMap(map, tahapanList);
+      }),
+    );
+
     // Deteksi tugas/data baru
     final newIds = permohonanList.map((p) => p.id).toSet();
     final addedIds = newIds.difference(_lastPermohonanIds);
+
     setState(() {
       _permohonanList = permohonanList;
       _loading = false;
       _lastPermohonanIds = newIds;
     });
+
     // Notifikasi jika ada tugas/data baru
     if (_lastPermohonanIds.isNotEmpty && addedIds.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Ada tugas/data baru di My Task!'),
               duration: Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
@@ -121,6 +143,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         }
       });
     }
+
     // Load vendor reports after permohonan list is loaded
     await _loadVendorReports();
   }
@@ -174,16 +197,50 @@ class _MyTaskScreenState extends State<MyTaskScreen>
   List<PermohonanModel> getFilteredPermohonan() {
     if (_profile == null) return [];
     final stages = getAvailableStages();
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return [];
+
     if (_selectedStage == null || _selectedStage == 'Semua') {
-      // Semua permohonan yang tahap aktifnya ada di stages
-      return _permohonanList
-          .where((p) => stages.contains(p.tahapanAktif))
-          .toList();
+      // Filter tasks based on role and vendor email
+      return _permohonanList.where((p) {
+        if (!stages.contains(p.tahapanAktif)) return false;
+
+        // For vendor role, check if the task is assigned to their email
+        if (_profile!.role == 'Vendor') {
+          final kontrakTahap = p.daftarTahapan.firstWhere(
+            (t) => t.nama == 'Kontrak Rinci',
+            orElse: () => const TahapanModel(nama: '', formData: {}),
+          );
+          final vendorEmail = kontrakTahap.formData?['vendor_email'];
+          print(
+            'DEBUG: Checking vendor email - Task: ${p.id}, Vendor Email: $vendorEmail, User Email: ${user.email}',
+          );
+          return vendorEmail == user.email;
+        }
+
+        return true;
+      }).toList();
     }
-    // Filter spesifik tahap
-    return _permohonanList
-        .where((p) => p.tahapanAktif == _selectedStage)
-        .toList();
+
+    // Filter specific stage
+    return _permohonanList.where((p) {
+      if (p.tahapanAktif != _selectedStage) return false;
+
+      // For vendor role, check if the task is assigned to their email
+      if (_profile!.role == 'Vendor') {
+        final kontrakTahap = p.daftarTahapan.firstWhere(
+          (t) => t.nama == 'Kontrak Rinci',
+          orElse: () => const TahapanModel(nama: '', formData: {}),
+        );
+        final vendorEmail = kontrakTahap.formData?['vendor_email'];
+        print(
+          'DEBUG: Checking vendor email - Task: ${p.id}, Vendor Email: $vendorEmail, User Email: ${user.email}',
+        );
+        return vendorEmail == user.email;
+      }
+
+      return true;
+    }).toList();
   }
 
   // Fungsi untuk mengambil laporan vendor berdasarkan permohonan_id
@@ -215,7 +272,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: VendorLaporanJaringanHistory(
+            child: VendorLaporanJaringanScreen(
               permohonanId: permohonan.id,
               namaPelanggan: permohonan.namaPelanggan,
               onLaporanAdded: () async {
@@ -224,9 +281,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                 if (mounted) {
                   setState(() {}); // Memastikan UI diperbarui
                 }
-                // print(
-                //   'DEBUG: Refreshed vendor reports after adding/updating report',
-                // );
               },
             ),
           ),
@@ -238,7 +292,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       if (mounted) {
         setState(() {}); // Memastikan UI diperbarui
       }
-      // print('DEBUG: Refreshed vendor reports after dialog closed');
     });
   }
 
@@ -531,7 +584,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                                               BoxShadow(
                                                 color: Colors.black12,
                                                 blurRadius: 8,
-                                                offset: Offset(0, 2),
+                                                offset: const Offset(0, 2),
                                               ),
                                             ],
                                           ),
@@ -569,7 +622,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                                         BoxShadow(
                                           color: Colors.black12,
                                           blurRadius: 8,
-                                          offset: Offset(0, 2),
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
@@ -584,7 +637,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                                         ),
                                         const SizedBox(height: 16),
                                         Text(
-                                          'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
+                                          'Tidak ada task untuk filter "${_selectedStage ?? ''}"',
                                           style: TextStyle(
                                             fontSize: 16,
                                             color: Colors.grey.shade600,

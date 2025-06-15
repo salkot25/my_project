@@ -201,8 +201,11 @@ class PermohonanCubit extends Cubit<PermohonanState> {
           ? profile['username'].toString()
           : null;
     }
-    formData['user_update'] = username ?? user?.email ?? 'User';
-    formData['tanggal_update'] = DateTime.now().toIso8601String();
+
+    // Convert formData to a JSON-serializable format
+    final serializedFormData = Map<String, dynamic>.from(formData);
+    serializedFormData['user_update'] = username ?? user?.email ?? 'User';
+    serializedFormData['tanggal_update'] = DateTime.now().toIso8601String();
 
     // 1. Update data form dan status tahap saat ini di tabel 'tahapan'
     await _supabase
@@ -210,10 +213,11 @@ class PermohonanCubit extends Cubit<PermohonanState> {
         .update({
           'status': StatusTahapan.selesai.toString().split('.').last,
           'tanggal_selesai': DateTime.now().toIso8601String(),
-          'form_data': formData, // Simpan Map<String, dynamic> langsung
+          'form_data': serializedFormData,
         })
         .eq('permohonan_id', idPermohonan)
         .eq('nama', namaTahapAktif);
+
     // Jika tahap "Permohonan" yang diisi, update juga data di PermohonanModel
     if (namaTahapAktif == "Permohonan") {
       JenisPermohonan? jenisPermohonan;
@@ -244,79 +248,48 @@ class PermohonanCubit extends Cubit<PermohonanState> {
             .eq('id', idPermohonan);
       } catch (_) {}
     }
+
     // Refresh detail
     loadPermohonanDetail(idPermohonan);
-    // Otomatis aktifkan tahap berikutnya setelah simpan form
-    advanceToNextStage(idPermohonan, namaTahapAktif);
-  }
 
-  void advanceToNextStage(String idPermohonan, String namaTahapSaatIni) {
-    // 1. Update status tahap saat ini menjadi 'selesai'
-    _supabase
+    // Cari urutan tahap saat ini
+    final currentTahapData = await _supabase
         .from('tahapan')
-        .update({
-          'status': StatusTahapan.selesai.toString().split('.').last,
-          'tanggal_selesai': DateTime.now().toIso8601String(),
-          // formData bisa null atau kosong jika tahap ini tidak memiliki form
-        })
+        .select('urutan')
         .eq('permohonan_id', idPermohonan)
-        .eq('nama', namaTahapSaatIni)
-        .then((_) {
-          // 2. Cari tahap berikutnya berdasarkan urutan
-          _supabase
-              .from('tahapan')
-              .select('urutan')
-              .eq('permohonan_id', idPermohonan)
-              .eq('nama', namaTahapSaatIni)
-              .single()
-              .then((currentTahapData) {
-                final currentUrutan = currentTahapData['urutan'] as int;
-                final nextUrutan = currentUrutan + 1;
+        .eq('nama', namaTahapAktif)
+        .single();
 
-                // 3. Update status tahap berikutnya menjadi 'aktif' jika ada
-                if (nextUrutan < alurTahapanDefault.length) {
-                  _supabase
-                      .from('tahapan')
-                      .update({
-                        'status': StatusTahapan.aktif
-                            .toString()
-                            .split('.')
-                            .last,
-                      })
-                      .eq('permohonan_id', idPermohonan)
-                      .eq('urutan', nextUrutan)
-                      .then((_) {
-                        // 4. Update status keseluruhan di tabel 'permohonan'
-                        final nextTahapNama = alurTahapanDefault[nextUrutan];
-                        _updatePermohonanStatus(idPermohonan, nextTahapNama);
-                      })
-                      .catchError((e) {
-                        emit(
-                          PermohonanError(
-                            "Gagal mengaktifkan tahap berikutnya (advance): ${e.toString()}",
-                          ),
-                        );
-                      });
-                } else {
-                  // Jika tidak ada tahap berikutnya, tandai permohonan selesai
-                  _updatePermohonanStatus(idPermohonan, "Selesai");
-                }
-              })
-              .catchError((e) {
-                emit(
-                  PermohonanError(
-                    "Gagal mencari urutan tahap (advance): ${e.toString()}",
-                  ),
-                );
-              });
-        })
-        .catchError((e) {
-          emit(
-            PermohonanError(
-              "Gagal menyelesaikan tahap (advance): ${e.toString()}",
-            ),
-          );
-        });
+    final currentUrutan = currentTahapData['urutan'] as int;
+    final nextUrutan = currentUrutan + 1;
+
+    // Jika ada tahap berikutnya
+    if (nextUrutan < alurTahapanDefault.length) {
+      // Cek status tahap berikutnya
+      final nextTahapData = await _supabase
+          .from('tahapan')
+          .select('status')
+          .eq('permohonan_id', idPermohonan)
+          .eq('urutan', nextUrutan)
+          .single();
+
+      // Hanya update jika tahap berikutnya belum selesai
+      if (nextTahapData['status'] !=
+          StatusTahapan.selesai.toString().split('.').last) {
+        await _supabase
+            .from('tahapan')
+            .update({'status': StatusTahapan.aktif.toString().split('.').last})
+            .eq('permohonan_id', idPermohonan)
+            .eq('urutan', nextUrutan);
+      }
+
+      // Update status keseluruhan di tabel 'permohonan'
+      final nextTahapNama = alurTahapanDefault[nextUrutan];
+      _updatePermohonanStatus(idPermohonan, nextTahapNama);
+    } else {
+      // Jika tidak ada tahap berikutnya, tandai permohonan selesai
+      _updatePermohonanStatus(idPermohonan, "Selesai");
+    }
   }
 
   void _updatePermohonanStatus(String idPermohonan, String statusNamaTahap) {
@@ -324,19 +297,17 @@ class PermohonanCubit extends Cubit<PermohonanState> {
     if (statusNamaTahap == "Selesai") {
       statusKeseluruhan = StatusPermohonan.selesai;
     } else {
-      // Asumsi status keseluruhan adalah nama tahap aktif saat ini
-      statusKeseluruhan = StatusPermohonan.proses; // Atau status lain jika ada
+      statusKeseluruhan = StatusPermohonan.proses;
     }
 
     _supabase
         .from('permohonan')
         .update({
           'status_keseluruhan': statusKeseluruhan.toString().split('.').last,
-          'nama_tahapan_aktif_cache': statusNamaTahap, // Update cache
+          'nama_tahapan_aktif_cache': statusNamaTahap,
         })
         .eq('id', idPermohonan)
         .then((_) {
-          // Muat ulang detail permohonan untuk refresh UI
           loadPermohonanDetail(idPermohonan);
         })
         .catchError((e) {

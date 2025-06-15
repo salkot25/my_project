@@ -45,12 +45,21 @@ class _FormKontrakRinciWidgetState extends State<FormKontrakRinciWidget> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedVendor == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Vendor harus dipilih')));
+        return;
+      }
+
       final formData = {
-        'vendor': _selectedVendor?.toString().split('.').last,
-        'catatan_kontrak': _catatanController.text,
-        // Anda bisa menambahkan konfirmasi material RAB di sini jika perlu
-        // Misalnya, menampilkan data RAB dari tahap sebelumnya dan meminta konfirmasi
+        'vendor': _selectedVendor.toString().split('.').last,
+        'vendor_email': _selectedVendor == Vendor.KAG
+            ? 'kag@sipps.app'
+            : 'armarin@sipps.app',
+        'catatan': _catatanController.text,
       };
+      print('DEBUG: Submitting form data - $formData');
       widget.onSubmit(formData);
     }
   }

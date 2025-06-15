@@ -10,9 +10,9 @@ import '../presentation/screens/auth/change_password_screen.dart';
 import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/settings_screen.dart';
 import '../presentation/screens/my_task_screen.dart';
-import '../presentation/screens/jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
-import '../presentation/screens/vendor_laporan_jaringan_list_screen.dart'; // Ditambahkan: import untuk VendorLaporanJaringanListScreen
-import '../presentation/screens/permohonan_map_screen.dart'; // Import layar peta
+import '../presentation/screens/vendor_laporan_jaringan_screen.dart';
+import '../presentation/screens/permohonan_map_screen.dart';
+import '../presentation/screens/vendor_laporan_jaringan_list_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -46,24 +46,24 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case MyTaskScreen.routeName:
         return MaterialPageRoute(builder: (_) => const MyTaskScreen());
-      case JaringanProgressScreen
-          .routeName: // Ditambahkan: route untuk JaringanProgressScreen
+      case '/vendor-laporan-jaringan':
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null && args.containsKey('permohonanId')) {
           return MaterialPageRoute(
-            builder: (_) => JaringanProgressScreen(
+            builder: (_) => VendorLaporanJaringanScreen(
               permohonanId: args['permohonanId'] as String,
               namaPelanggan: args['namaPelanggan'] as String?,
             ),
           );
         }
-        return _errorRoute("Argumen untuk JaringanProgressScreen tidak valid.");
-      case '/vendor-laporan-jaringan': // Ditambahkan: route untuk VendorLaporanJaringanListScreen
+        return _errorRoute(
+          "Argumen untuk VendorLaporanJaringanScreen tidak valid.",
+        );
+      case '/vendor-laporan-jaringan-list':
         return MaterialPageRoute(
           builder: (_) => const VendorLaporanJaringanListScreen(),
         );
-      case PermohonanMapScreen
-          .routeName: // Tambahkan rute untuk Peta Permohonan
+      case PermohonanMapScreen.routeName:
         return MaterialPageRoute(builder: (_) => const PermohonanMapScreen());
       default:
         return _errorRoute("Rute tidak ditemukan: ${settings.name}");

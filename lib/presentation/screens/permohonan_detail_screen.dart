@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../../data/models/permohonan_model.dart';
 import '../../data/models/tahapan_model.dart';
@@ -9,9 +10,10 @@ import '../widgets/forms/form_mom_widget.dart'; // Import form
 import '../widgets/forms/form_rab_widget.dart'; // Import form
 import '../widgets/forms/form_kontrak_rinci_widget.dart'; // Import form
 import '../widgets/forms/form_pasang_app_widget.dart'; // Import form
+import '../widgets/forms/form_kelengkapan_dokumen_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
-import './jaringan_progress_screen.dart'; // Ditambahkan: import untuk JaringanProgressScreen
+import 'vendor_laporan_jaringan_screen.dart';
 
 extension FirstWhereOrNullExtension<E> on Iterable<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -61,108 +63,420 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
       }
     }
 
-    switch (tahapanAktif.nama) {
-      case "Permohonan":
-        // Saat edit manual, pastikan FormPermohonanWidget menerima data dari tahapan.formData jika ada
-        return FormPermohonanWidget(
-          permohonan: PermohonanModel(
-            id: permohonan.id,
-            namaPelanggan:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["nama_pelanggan"] != null
-                ? tahapanAktif.formData!["nama_pelanggan"]
-                : permohonan.namaPelanggan,
-            tanggalPengajuan: permohonan.tanggalPengajuan,
-            daftarTahapan: permohonan.daftarTahapan,
-            statusKeseluruhan: permohonan.statusKeseluruhan,
-            prioritas:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["prioritas"] != null
-                ? Prioritas.values.firstWhereOrNull(
-                    (e) => e.name == tahapanAktif.formData!["prioritas"],
-                  )
-                : permohonan.prioritas,
-            catatanPermohonan:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["catatan"] != null
-                ? tahapanAktif.formData!["catatan"]
-                : permohonan.catatanPermohonan,
-            jenisPermohonan:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["jenis_permohonan"] != null
-                ? JenisPermohonan.values.firstWhereOrNull(
-                    (e) => e.name == tahapanAktif.formData!["jenis_permohonan"],
-                  )
-                : permohonan.jenisPermohonan,
-            daya:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["daya"] != null
-                ? tahapanAktif.formData!["daya"]
-                : permohonan.daya,
-            namaTahapanAktifCache: permohonan.namaTahapanAktifCache,
-            alamat:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["alamat"] != null
-                ? tahapanAktif.formData!["alamat"]
-                : permohonan.alamat,
-            waPelanggan:
-                tahapanAktif.formData != null &&
-                    tahapanAktif.formData!["wa_pelanggan"] != null
-                ? tahapanAktif.formData!["wa_pelanggan"]
-                : permohonan.waPelanggan,
-          ),
-          onSubmit: handleFormSubmit,
-        );
-      case "Survey Lokasi":
-        // Saat edit manual, pastikan FormSurveyWidget menerima initialData dari tahapan.formData jika ada
-        return FormSurveyWidget(
-          onSubmit: handleFormSubmit,
-          initialData:
-              tahapanAktif.formData != null && tahapanAktif.formData!.isNotEmpty
-              ? Map<String, dynamic>.from(tahapanAktif.formData!)
-              : tahapanAktif.formData,
-        );
-      case "MOM":
-        return FormMomWidget(
-          onSubmit: handleFormSubmit,
-          initialData: tahapanAktif.formData,
-        );
-      case "RAB":
-        final surveyTahap = permohonan.daftarTahapan.firstWhere(
-          (t) => t.nama == "Survey Lokasi",
-          orElse: () => const TahapanModel(nama: 'Survey Lokasi', formData: {}),
-        );
-        return FormRabWidget(
-          onSubmit: handleFormSubmit,
-          initialData: tahapanAktif.formData,
-          surveyData: surveyTahap.formData,
-        );
-      case "Kontrak Rinci":
-        final rabTahap = permohonan.daftarTahapan.firstWhere(
-          (t) => t.nama == "RAB",
-          orElse: () => const TahapanModel(nama: 'RAB', formData: {}),
-        );
-        return FormKontrakRinciWidget(
-          onSubmit: handleFormSubmit,
-          initialData: tahapanAktif.formData,
-          rabData: rabTahap.formData,
-        );
-      case "Pasang APP":
-        return FormPasangAppWidget(
-          onSubmit: handleFormSubmit,
-          initialData: tahapanAktif.formData,
-        );
-      default:
-        return Center(
-          child: ElevatedButton(
-            onPressed: () => context.read<PermohonanCubit>().advanceToNextStage(
-              permohonan.id,
-              tahapanAktif.nama,
+    // Skip form input for Jaringan stage
+    if (tahapanAktif.nama == "Jaringan") {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 12.0,
             ),
-            child: Text('Selesaikan Tahap: ${tahapanAktif.nama}'),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.blue.shade100, width: 1.2),
+            ),
+            child: Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.assessment_outlined, size: 20),
+                label: const Text('Lihat Progress Jaringan'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VendorLaporanJaringanScreen(
+                        permohonanId: permohonan.id,
+                        namaPelanggan: permohonan.namaPelanggan,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ),
-        );
+          const SizedBox(height: 16),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: Supabase.instance.client
+                .from('vendor_laporan_jaringan')
+                .select()
+                .eq('permohonan_id', permohonan.id)
+                .order('tanggal', ascending: false)
+                .limit(3),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final reports = snapshot.data ?? [];
+              if (reports.isEmpty) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 28,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.blue.shade100, width: 1.2),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue.shade200,
+                        size: 38,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Belum ada laporan jaringan',
+                        style: TextStyle(
+                          color: Colors.blue.shade400,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Vendor akan mengirimkan laporan progress jaringan.',
+                        style: TextStyle(
+                          color: Colors.blueGrey.shade300,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final hasSiapPasangApp = reports.any(
+                (report) => report['siap_pasang_app'] == true,
+              );
+              return Column(
+                children: [
+                  ...reports.map((report) {
+                    final jenisPekerjaan = report['jenis_pekerjaan'] ?? '-';
+                    final status = (report['status'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    Color badgeColor;
+                    Color textColor;
+                    if (status == 'selesai') {
+                      badgeColor = Colors.green.shade50;
+                      textColor = Colors.green;
+                    } else if (status == 'proses') {
+                      badgeColor = Colors.orange.shade50;
+                      textColor = Colors.orange;
+                    } else {
+                      badgeColor = Colors.red.shade50;
+                      textColor = Colors.red;
+                    }
+                    final namaPelanggan = permohonan.namaPelanggan ?? '-';
+                    final alamat = permohonan.alamat ?? '-';
+                    String tgl = '-';
+                    if (report['tanggal'] != null &&
+                        report['tanggal'].toString().isNotEmpty) {
+                      try {
+                        final dt = DateTime.parse(report['tanggal']);
+                        tgl =
+                            '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+                      } catch (_) {
+                        tgl = report['tanggal'].toString();
+                      }
+                    }
+                    final user =
+                        report['user_nama'] ?? report['user_email'] ?? '-';
+                    final catatan = report['catatan'] ?? '';
+                    return Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 1,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    jenisPekerjaan,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    status.isNotEmpty
+                                        ? status.toUpperCase()
+                                        : '-',
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              namaPelanggan,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              alamat,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 15,
+                                        color: Colors.blueGrey.shade400,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        tgl,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blueGrey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person_outline,
+                                        size: 15,
+                                        color: Colors.blueGrey.shade400,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        user,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blueGrey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (catatan.isNotEmpty) ...[
+                                  const SizedBox(width: 10),
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.yellow.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.sticky_note_2,
+                                            size: 15,
+                                            color: Colors.amber.shade700,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              catatan,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.amber.shade800,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  if (hasSiapPasangApp) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          context
+                              .read<PermohonanCubit>()
+                              .saveStageFormDataAndComplete(
+                                permohonan.id,
+                                'Jaringan',
+                                {'status': 'selesai'},
+                              );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF22C55E),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline, size: 20),
+                        label: const Text(
+                          'Lanjutkan ke Tahap Berikutnya',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      );
     }
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            switch (tahapanAktif.nama) {
+              "Permohonan" => FormPermohonanWidget(
+                permohonan: permohonan,
+                onSubmit: handleFormSubmit,
+              ),
+              "Survey Lokasi" => FormSurveyWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+              ),
+              "RAB" => FormRabWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+                surveyData: permohonan.daftarTahapan
+                    .firstWhere(
+                      (t) => t.nama == "Survey Lokasi",
+                      orElse: () => const TahapanModel(
+                        nama: 'Survey Lokasi',
+                        formData: {},
+                      ),
+                    )
+                    .formData,
+              ),
+              "MOM" => FormMomWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+              ),
+              "Kelengkapan Dokumen" => FormKelengkapanDokumenWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+              ),
+              "Kontrak Rinci" => FormKontrakRinciWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+                rabData: permohonan.daftarTahapan
+                    .firstWhere(
+                      (t) => t.nama == "RAB",
+                      orElse: () =>
+                          const TahapanModel(nama: 'RAB', formData: {}),
+                    )
+                    .formData,
+              ),
+              "Pasang APP" => FormPasangAppWidget(
+                onSubmit: handleFormSubmit,
+                initialData: tahapanAktif.formData,
+              ),
+              _ => const Center(child: Text('Tahapan tidak ditemukan')),
+            },
+          ],
+        ),
+      ),
+    );
   }
 
   void _showEditPermohonanDialog(
@@ -472,10 +786,7 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
               data['catatan_mom'].toString().isNotEmpty)
             'catatan_mom': data['catatan_mom'],
         };
-        icons = {
-          'tanggal_mom': Icons.event_note,
-          'catatan_mom': Icons.sticky_note_2,
-        };
+        icons = {'tanggal_mom': Icons.event, 'catatan_mom': Icons.notes};
         labels = {'tanggal_mom': 'Tanggal MOM', 'catatan_mom': 'Catatan'};
         break;
       case "RAB":
@@ -529,6 +840,396 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
           'catatan_pasang': 'Catatan',
         };
         break;
+      case "Kelengkapan Dokumen":
+        fields = {
+          if (data['has_nidi'] != null) 'has_nidi': data['has_nidi'],
+          if (data['has_slo'] != null) 'has_slo': data['has_slo'],
+          if (data['has_nib'] != null) 'has_nib': data['has_nib'],
+          if (data['has_siup'] != null) 'has_siup': data['has_siup'],
+          if (data['has_ijin_tanam_tiang'] != null)
+            'has_ijin_tanam_tiang': data['has_ijin_tanam_tiang'],
+          if (data['catatan'] != null && data['catatan'].toString().isNotEmpty)
+            'catatan': data['catatan'],
+        };
+        icons = {
+          'has_nidi': Icons.check_circle,
+          'has_slo': Icons.check_circle,
+          'has_nib': Icons.check_circle,
+          'has_siup': Icons.check_circle,
+          'has_ijin_tanam_tiang': Icons.check_circle,
+          'catatan': Icons.notes,
+        };
+        labels = {
+          'has_nidi': 'NIDI',
+          'has_slo': 'SLO',
+          'has_nib': 'NIB',
+          'has_siup': 'SIUP',
+          'has_ijin_tanam_tiang': 'Ijin Tanam Tiang',
+          'catatan': 'Catatan',
+        };
+        break;
+      case "Jaringan":
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                vertical: 16.0,
+                horizontal: 12.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.blue.shade100, width: 1.2),
+              ),
+              child: Center(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.assessment_outlined, size: 20),
+                  label: const Text('Lihat Progress Jaringan'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VendorLaporanJaringanScreen(
+                          permohonanId: permohonan.id,
+                          namaPelanggan: permohonan.namaPelanggan,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: Supabase.instance.client
+                  .from('vendor_laporan_jaringan')
+                  .select()
+                  .eq('permohonan_id', permohonan.id)
+                  .order('tanggal', ascending: false)
+                  .limit(3),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                final reports = snapshot.data ?? [];
+                if (reports.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 28,
+                      horizontal: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.blue.shade100,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade200,
+                          size: 38,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Belum ada laporan jaringan',
+                          style: TextStyle(
+                            color: Colors.blue.shade400,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Vendor akan mengirimkan laporan progress jaringan.',
+                          style: TextStyle(
+                            color: Colors.blueGrey.shade300,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final hasSiapPasangApp = reports.any(
+                  (report) => report['siap_pasang_app'] == true,
+                );
+                return Column(
+                  children: [
+                    ...reports.map((report) {
+                      final jenisPekerjaan = report['jenis_pekerjaan'] ?? '-';
+                      final status = (report['status'] ?? '')
+                          .toString()
+                          .toLowerCase();
+                      Color badgeColor;
+                      Color textColor;
+                      if (status == 'selesai') {
+                        badgeColor = Colors.green.shade50;
+                        textColor = Colors.green;
+                      } else if (status == 'proses') {
+                        badgeColor = Colors.orange.shade50;
+                        textColor = Colors.orange;
+                      } else {
+                        badgeColor = Colors.red.shade50;
+                        textColor = Colors.red;
+                      }
+                      final namaPelanggan = permohonan.namaPelanggan ?? '-';
+                      final alamat = permohonan.alamat ?? '-';
+                      String tgl = '-';
+                      if (report['tanggal'] != null &&
+                          report['tanggal'].toString().isNotEmpty) {
+                        try {
+                          final dt = DateTime.parse(report['tanggal']);
+                          tgl =
+                              '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+                        } catch (_) {
+                          tgl = report['tanggal'].toString();
+                        }
+                      }
+                      final user =
+                          report['user_nama'] ?? report['user_email'] ?? '-';
+                      final catatan = report['catatan'] ?? '';
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 1,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      jenisPekerjaan,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: badgeColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      status.isNotEmpty
+                                          ? status.toUpperCase()
+                                          : '-',
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                namaPelanggan,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                alamat,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 15,
+                                          color: Colors.blueGrey.shade400,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          tgl,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blueGrey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.person_outline,
+                                          size: 15,
+                                          color: Colors.blueGrey.shade400,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          user,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blueGrey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (catatan.isNotEmpty) ...[
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.yellow.shade50,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.sticky_note_2,
+                                              size: 15,
+                                              color: Colors.amber.shade700,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                catatan,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.amber.shade800,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    if (hasSiapPasangApp) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            context
+                                .read<PermohonanCubit>()
+                                .saveStageFormDataAndComplete(
+                                  permohonan.id,
+                                  'Jaringan',
+                                  {'status': 'selesai'},
+                                );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF22C55E),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            size: 20,
+                          ),
+                          label: const Text(
+                            'Lanjutkan ke Tahap Berikutnya',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        );
       default:
         fields = {};
         icons = {};
@@ -552,14 +1253,14 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
               icon: const Icon(Icons.assessment_outlined, size: 20),
               label: const Text('Lihat Progress Jaringan'),
               onPressed: () {
-                Navigator.pushNamed(
+                Navigator.push(
                   context,
-                  JaringanProgressScreen
-                      .routeName, // Navigasi ke JaringanProgressScreen
-                  arguments: {
-                    'permohonanId': permohonan.id,
-                    'namaPelanggan': permohonan.namaPelanggan,
-                  },
+                  MaterialPageRoute(
+                    builder: (context) => VendorLaporanJaringanScreen(
+                      permohonanId: permohonan.id,
+                      namaPelanggan: permohonan.namaPelanggan,
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -692,7 +1393,10 @@ class _PermohonanDetailScreenState extends State<PermohonanDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      value.toString(),
+                      tahapan.nama == "Kelengkapan Dokumen" &&
+                              key.startsWith('has_')
+                          ? (value == true ? 'Sudah Lengkap' : 'Belum Lengkap')
+                          : (value?.toString() ?? '-'),
                       style: const TextStyle(
                         color: Colors.black87,
                         fontWeight: FontWeight.w700,

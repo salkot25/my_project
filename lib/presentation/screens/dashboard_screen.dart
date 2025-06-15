@@ -4,16 +4,383 @@ import '../widgets/app_drawer.dart';
 import '../../logic/permohonan_cubit/permohonan_cubit.dart';
 import '../../data/models/permohonan_model.dart';
 import 'package:my_project/data/models/tahapan_model.dart';
-import 'package:my_project/presentation/widgets/vendor_laporan_jaringan_history_list.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_project/data/models/user_model.dart';
+import 'package:my_project/presentation/screens/my_task_screen.dart';
+import 'package:my_project/presentation/widgets/vendor_laporan_jaringan_card.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
+  Future<UserProfileModel?> _getUserProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return null;
+    final profileMap = await Supabase.instance.client
+        .from('profile')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+    if (profileMap == null) return null;
+    return UserProfileModel.fromMap(profileMap);
+  }
+
+  List<String> _getRoleStages(String role) {
+    const Map<String, List<String>> roleStages = {
+      'PP': ['Permohonan', 'MOM', 'Kontrak Rinci'],
+      'Teknik': ['Survey Lokasi', 'RAB', 'Jaringan'],
+      'TE': ['Pasang APP'],
+      'Vendor': ['Jaringan'],
+      'Admin': [], // Semua
+      'Manager': [], // Semua
+    };
+    return roleStages[role] ?? [];
+  }
+
+  void _showMyTasks(
+    BuildContext context,
+    List<PermohonanModel> permohonanList,
+    UserProfileModel profile,
+  ) {
+    final stages = _getRoleStages(profile.role);
+    final filteredTasks = permohonanList
+        .where((p) => stages.isEmpty || stages.contains(p.tahapanAktif))
+        .toList();
+
+    // Group tasks by stage
+    final Map<String, List<PermohonanModel>> groupedTasks = {};
+    for (var task in filteredTasks) {
+      if (!groupedTasks.containsKey(task.tahapanAktif)) {
+        groupedTasks[task.tahapanAktif] = [];
+      }
+      groupedTasks[task.tahapanAktif]!.add(task);
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.task_alt, color: Colors.white, size: 28),
+                        SizedBox(width: 12),
+                        Text(
+                          'My Tasks',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: groupedTasks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No tasks available',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: groupedTasks.length,
+                          itemBuilder: (context, index) {
+                            final stage = groupedTasks.keys.elementAt(index);
+                            final tasks = groupedTasks[stage]!;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _getStageIcon(stage),
+                                        size: 20,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        stage,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).primaryColor,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tasks.length.toString(),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                ...tasks.map(
+                                  (task) => Card(
+                                    margin: EdgeInsets.only(bottom: 8),
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        Navigator.pushNamed(
+                                          context,
+                                          MyTaskScreen.routeName,
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.person_outline,
+                                                  size: 20,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    task.namaPelanggan,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.location_on_outlined,
+                                                  size: 16,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    task.alamat ?? 'No address',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.calendar_today,
+                                                  size: 16,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'Created: ${_formatDate(task.tanggalPengajuan)}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getStageIcon(String stage) {
+    switch (stage) {
+      case 'Permohonan':
+        return Icons.description_outlined;
+      case 'Survey Lokasi':
+        return Icons.location_on_outlined;
+      case 'MOM':
+        return Icons.assignment_outlined;
+      case 'RAB':
+        return Icons.attach_money;
+      case 'Kontrak Rinci':
+        return Icons.gavel_outlined;
+      case 'Jaringan':
+        return Icons.router_outlined;
+      case 'Pasang APP':
+        return Icons.power_outlined;
+      default:
+        return Icons.work_outline;
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          BlocBuilder<PermohonanCubit, PermohonanState>(
+            builder: (context, state) {
+              if (state is PermohonanListLoaded) {
+                return FutureBuilder<UserProfileModel?>(
+                  future: _getUserProfile(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      final profile = snapshot.data!;
+                      final stages = _getRoleStages(profile.role);
+                      final taskCount = state.permohonanList
+                          .where(
+                            (p) =>
+                                stages.isEmpty ||
+                                stages.contains(p.tahapanAktif),
+                          )
+                          .length;
+
+                      return Stack(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.notifications),
+                            onPressed: () => _showMyTasks(
+                              context,
+                              state.permohonanList,
+                              profile,
+                            ),
+                          ),
+                          if (taskCount > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  taskCount.toString(),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
+                );
+              }
+              return SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
       drawer: const AppDrawer(currentRoute: '/dashboard'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -265,7 +632,7 @@ class DashboardScreen extends StatelessWidget {
                             onPressed: () {
                               Navigator.pushNamed(
                                 context,
-                                '/vendor-laporan-jaringan',
+                                '/vendor-laporan-jaringan-list',
                               );
                             },
                             child: const Text('Lihat Semua'),
@@ -273,7 +640,141 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      VendorLaporanJaringanHistoryList(maxItems: 3),
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: Supabase.instance.client
+                            .from('vendor_laporan_jaringan')
+                            .select()
+                            .order('tanggal', ascending: false)
+                            .limit(3),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          final laporanList = snapshot.data ?? [];
+                          if (laporanList.isEmpty) {
+                            return const Center(
+                              child: Text('Belum ada laporan jaringan'),
+                            );
+                          }
+
+                          return FutureBuilder<
+                            Map<String, Map<String, dynamic>>
+                          >(
+                            future: Supabase.instance.client
+                                .from('permohonan')
+                                .select('id, nama_pelanggan, alamat')
+                                .then((data) {
+                                  final list = List<Map<String, dynamic>>.from(
+                                    data,
+                                  );
+                                  return {for (var p in list) p['id']: p};
+                                }),
+                            builder: (context, permohonanSnap) {
+                              if (permohonanSnap.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+
+                              final permohonanMap = permohonanSnap.data ?? {};
+                              final userIds = laporanList
+                                  .map((r) => r['user_id']?.toString() ?? '')
+                                  .where((id) => id.isNotEmpty)
+                                  .toSet()
+                                  .toList();
+
+                              return FutureBuilder<Map<String, String>>(
+                                future: Supabase.instance.client
+                                    .from('profile')
+                                    .select('user_id, username')
+                                    .inFilter('user_id', userIds)
+                                    .then((data) {
+                                      final list =
+                                          List<Map<String, dynamic>>.from(data);
+                                      return {
+                                        for (var u in list)
+                                          u['user_id']: u['username'] ?? '-',
+                                      };
+                                    }),
+                                builder: (context, userSnap) {
+                                  if (userSnap.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+
+                                  final userMap = userSnap.data ?? {};
+
+                                  return Column(
+                                    children: laporanList.map((r) {
+                                      final permohonan =
+                                          permohonanMap[r['permohonan_id']];
+                                      final namaPelanggan = permohonan != null
+                                          ? (permohonan['nama_pelanggan'] ??
+                                                '-')
+                                          : '-';
+                                      final alamat = permohonan != null
+                                          ? (permohonan['alamat'] ?? '-')
+                                          : '-';
+
+                                      String tgl = '-';
+                                      if (r['tanggal'] != null &&
+                                          r['tanggal'].toString().isNotEmpty) {
+                                        try {
+                                          final dt = DateTime.parse(
+                                            r['tanggal'],
+                                          );
+                                          tgl =
+                                              '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year}';
+                                        } catch (_) {
+                                          tgl = r['tanggal'].toString();
+                                        }
+                                      }
+
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
+                                        child: VendorLaporanJaringanCard(
+                                          jenisPekerjaan:
+                                              r['jenis_pekerjaan'] ?? '-',
+                                          status: r['status'] ?? '-',
+                                          namaPelanggan: namaPelanggan,
+                                          alamat: alamat,
+                                          tanggal: tgl,
+                                          username:
+                                              userMap[r['user_id']] ?? '-',
+                                          catatan: r['catatan'],
+                                          onEdit: () {
+                                            Navigator.pushNamed(
+                                              context,
+                                              '/vendor-laporan-jaringan',
+                                              arguments: {
+                                                'permohonanId':
+                                                    r['permohonan_id'],
+                                                'namaPelanggan': namaPelanggan,
+                                              },
+                                            );
+                                          },
+                                          onDelete: () {
+                                            // Tidak perlu implementasi karena ini hanya preview di dashboard
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   );
                 },

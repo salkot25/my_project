@@ -68,49 +68,151 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (value) =>
-                      value!.isEmpty ? 'Email tidak boleh kosong' : null,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true,
-                  validator: (value) =>
-                      value!.isEmpty ? 'Password tidak boleh kosong' : null,
-                ),
-                const SizedBox(height: 20),
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _signIn,
-                        child: const Text('Login'),
-                      ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(RegisterScreen.routeName),
-                  child: const Text('Belum punya akun? Daftar di sini'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamed(ForgotPasswordScreen.routeName),
-                  child: const Text('Lupa Password?'),
+          padding: const EdgeInsets.all(0),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            margin: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 28),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.shade100.withOpacity(0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const Text(
+                    'Selamat Datang',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Masuk ke akun Anda untuk melanjutkan',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.blueGrey.shade400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: Icon(
+                        Icons.mail_outline,
+                        color: Colors.blue.shade400,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          color: Colors.blue.shade400,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Email tidak boleh kosong' : null,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: Colors.blue.shade400,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          color: Colors.blue.shade400,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    obscureText: true,
+                    validator: (value) =>
+                        value!.isEmpty ? 'Password tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 22),
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _signIn,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Login'),
+                          ),
+                        ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(RegisterScreen.routeName),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue.shade600,
+                        ),
+                        child: const Text('Daftar Akun'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(ForgotPasswordScreen.routeName),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue.shade400,
+                        ),
+                        child: const Text('Lupa Password?'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
