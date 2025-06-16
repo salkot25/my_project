@@ -72,8 +72,9 @@ class _VendorLaporanJaringanScreenState
       // Filter date range
       if (startDate != null && endDate != null) {
         list = list.where((item) {
-          if (item['tanggal'] == null || item['tanggal'].toString().isEmpty)
+          if (item['tanggal'] == null || item['tanggal'].toString().isEmpty) {
             return false;
+          }
           try {
             final itemDate = DateTime.parse(item['tanggal']);
             final startCompare = DateTime(
@@ -123,7 +124,7 @@ class _VendorLaporanJaringanScreenState
     final catatanController = TextEditingController();
     bool siapPasangApp = false;
     DateTime selectedDateTime = DateTime.now();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     JenisPekerjaanJaringan? selectedJenis;
 
     InputDecoration inputDecoration(String label, IconData icon) =>
@@ -172,7 +173,7 @@ class _VendorLaporanJaringanScreenState
             ],
           ),
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -352,8 +353,10 @@ class _VendorLaporanJaringanScreenState
                               elevation: 0,
                             ),
                             onPressed: () async {
-                              if (!(_formKey.currentState?.validate() ?? false))
+                              if (!(formKey.currentState?.validate() ??
+                                  false)) {
                                 return;
+                              }
                               try {
                                 final user =
                                     Supabase.instance.client.auth.currentUser;
